@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои конспекты</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Экран установки (показывается в браузере) -->
+    <div class="install-screen" id="installScreen">
+        <div class="install-container">
+            <div class="install-icon">📝</div>
+            <h1>Мои конспекты</h1>
+            <p>Установите приложение для оффлайн доступа к вашим конспектам</p>
+            <button class="install-btn" id="installBtn">
+                ⬇️ Установить приложение
+            </button>
+            <div class="install-info">
+                <p>✓ Работает оффлайн</p>
+                <p>✓ Данные хранятся локально</p>
+                <p>✓ Быстрый доступ</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основное приложение (показывается в PWA) -->
+    <div class="app" id="app" style="display: none;">
+        <!-- Боковое меню -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>📝 Мои темы</h2>
+                <button class="add-theme-btn" id="addThemeBtn">+ Новая тема</button>
+            </div>
+            <nav class="theme-list" id="themeList">
+                <!-- Темы будут добавляться сюда -->
+            </nav>
+        </aside>
+
+        <!-- Основная область -->
+        <main class="main-content">
+            <header class="main-header">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1 id="currentThemeTitle">Выберите тему</h1>
+                <button class="save-btn" id="saveNoteBtn">💾 Сохранить</button>
+            </header>
+            
+            <div class="editor-area">
+                <textarea 
+                    id="noteEditor" 
+                    placeholder="Введите ваш конспект здесь..."
+                    disabled
+                ></textarea>
+            </div>
+        </main>
+    </div>
+
+    <!-- Модальное окно для добавления темы -->
+    <div class="modal" id="addThemeModal">
+        <div class="modal-content">
+            <h3>Новая тема</h3>
+            <input type="text" id="newThemeName" placeholder="Название темы">
+            <div class="modal-buttons">
+                <button id="cancelAddTheme">Отмена</button>
+                <button id="confirmAddTheme">Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
