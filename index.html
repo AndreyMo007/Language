@@ -16,7 +16,7 @@
             <h1>Мои конспекты</h1>
             <p>Установите приложение для оффлайн доступа к вашим конспектам</p>
             <button class="install-btn" id="installBtn">
-                ⬇️ Установить приложение
+                Установить приложение
             </button>
             <div class="install-info">
                 <p>✓ Работает оффлайн</p>
@@ -31,7 +31,7 @@
         <!-- Боковое меню -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2>📝 Мои темы</h2>
+                <h2>📚 Мои темы</h2>
                 <button class="add-theme-btn" id="addThemeBtn">+ Новая тема</button>
             </div>
             <nav class="theme-list" id="themeList">
@@ -47,12 +47,49 @@
                 <button class="save-btn" id="saveNoteBtn">💾 Сохранить</button>
             </header>
             
+            <!-- Панель инструментов для форматирования -->
+            <div class="toolbar" id="toolbar">
+                <div class="toolbar-group">
+                    <button onclick="window.app.formatText('h1')" title="Заголовок 1">H1</button>
+                    <button onclick="window.app.formatText('h2')" title="Заголовок 2">H2</button>
+                    <button onclick="window.app.formatText('h3')" title="Заголовок 3">H3</button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <button onclick="window.app.formatText('bold')" title="Жирный">B</button>
+                    <button onclick="window.app.formatText('italic')" title="Курсив">I</button>
+                    <button onclick="window.app.formatText('underline')" title="Подчеркнутый">U</button>
+                    <button onclick="window.app.formatText('strike')" title="Зачеркнутый">S</button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <button onclick="window.app.formatText('list')" title="Маркированный список">•</button>
+                    <button onclick="window.app.formatText('numbered-list')" title="Нумерованный список">1.</button>
+                    <button onclick="window.app.formatText('checkbox')" title="Чекбокс">☑</button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <button onclick="window.app.formatText('quote')" title="Цитата">❝</button>
+                    <button onclick="window.app.formatText('code')" title="Код">&lt;/&gt;</button>
+                    <button onclick="window.app.formatText('link')" title="Ссылка">🔗</button>
+                    <button onclick="window.app.formatText('hr')" title="Горизонтальная линия">—</button>
+                </div>
+            </div>
+            
+            <!-- Вкладки редактора -->
+            <div class="editor-tabs">
+                <button class="tab-btn active" onclick="window.app.switchTab('write')">✏️ Редактор</button>
+                <button class="tab-btn" onclick="window.app.switchTab('preview')">👁️ Просмотр</button>
+            </div>
+            
+            <!-- Область редактора -->
             <div class="editor-area">
                 <textarea 
                     id="noteEditor" 
-                    placeholder="Введите ваш конспект здесь..."
+                    
                     disabled
                 ></textarea>
+                <div class="preview-area" id="previewArea" style="display: none;"></div>
             </div>
         </main>
     </div>
