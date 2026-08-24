@@ -436,3 +436,119 @@ class NotesApp {
         // Цитаты
         html = html.replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>');
         
+        // Код
+        html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+        
+        // Ссылки
+        html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+        
+        // Изображения
+        html = html.replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1">');
+        
+        // Горизонтальная линия
+        html = html.replace(/^---$/gm, '<hr>');
+        
+        // Подчеркивание
+        html = html.replace(/<u>(.*?)<\/u>/g, '<u>$1</u>');
+        
+        // Переносы строк
+        html = html.replace(/\n\n/g, '</p><p>');
+        html = html.replace(/\n/g, '<br>');
+        
+        // Оборачивание в параграфы
+        html = `<div class="markdown-content">${html}</div>`;
+        
+        return html;
+    }
+    
+    // Экспорт всех заметок
+    exportAllNotes() {
+        const exportData = {
+            version: '1.0',
+            exportedAt: new Date().toISOString(),
+            themes: this.themes
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `конспекты_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        this.showNotification('Данные экспортированы');
+    }
+    
+    // Импорт заметок
+    importNotes(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importData = JSON.parse(e.target.result);
+                
+                if (importData.themes && Array.isArray(importData.themes)) {
+                    if (confirm(`Импортировать ${importData.themes.length} тем?`)) {
+                        this.themes = importData.themes;
+                        this.saveThemes();
+                        this.renderThemes();
+                        
+                        if (this.themes.length > 0) {
+                            this.openTheme(this.themes[0].id);
+                        }
+                        
+                        this.showNotification('Данные импортированы');
+                    }
+                } else {
+                    this.showNotification('Неверный формат файла', 'error');
+                }
+            } catch (error) {
+                this.showNotification('Ошибка импорта', 'error');
+            }
+        };
+        
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+    
+    // Уведомления
+    showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.textContent = message;
+        
+        if (type === 'error') {
+            notification.style.background = '#f44336';
+        }
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 2000);
+    }
+    
+    initServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker зарегистрирован:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Ошибка регистрации Service Worker:', error);
+                    });
+            });
+        }
+    }
+}
+
+// Инициализация приложения
+document.addEventListener('DOMContentLoaded', () => {
+    const app = new NotesApp();
+    window.app = app;
+});
