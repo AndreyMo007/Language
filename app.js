@@ -5,8 +5,10 @@ class NotesApp {
         this.autoSaveTimer = null;
         this.deferredPrompt = null;
         this.systemThemes = SystemNotes.getAllThemes();
+        this.isDarkTheme = true;
         
         this.initElements();
+        this.loadThemePreference();
         this.checkInstallMode();
         this.loadThemes();
         this.attachEventListeners();
@@ -24,10 +26,33 @@ class NotesApp {
         this.addThemeBtn = document.getElementById('addThemeBtn');
         this.saveNoteBtn = document.getElementById('saveNoteBtn');
         this.menuToggle = document.getElementById('menuToggle');
+        this.settingsBtn = document.getElementById('settingsBtn');
         this.addThemeModal = document.getElementById('addThemeModal');
+        this.settingsModal = document.getElementById('settingsModal');
         this.newThemeName = document.getElementById('newThemeName');
         this.cancelAddTheme = document.getElementById('cancelAddTheme');
         this.confirmAddTheme = document.getElementById('confirmAddTheme');
+        this.closeSettings = document.getElementById('closeSettings');
+        this.themeToggle = document.getElementById('themeToggle');
+    }
+    
+    loadThemePreference() {
+        const savedTheme = localStorage.getItem('notesAppTheme');
+        if (savedTheme) {
+            this.isDarkTheme = savedTheme === 'dark';
+        }
+        this.applyTheme();
+    }
+    
+    applyTheme() {
+        if (this.isDarkTheme) {
+            document.body.classList.remove('light-theme');
+            this.themeToggle.checked = true;
+        } else {
+            document.body.classList.add('light-theme');
+            this.themeToggle.checked = false;
+        }
+        localStorage.setItem('notesAppTheme', this.isDarkTheme ? 'dark' : 'light');
     }
     
     checkInstallMode() {
@@ -94,11 +119,20 @@ class NotesApp {
         this.confirmAddTheme.addEventListener('click', () => this.addNewTheme());
         this.saveNoteBtn.addEventListener('click', () => this.saveCurrentNote());
         this.menuToggle.addEventListener('click', () => this.toggleSidebar());
+        this.settingsBtn.addEventListener('click', () => this.openSettingsModal());
+        this.closeSettings.addEventListener('click', () => this.closeSettingsModal());
+        this.themeToggle.addEventListener('change', () => this.toggleTheme());
         
-        // Закрытие модального окна при клике вне его
+        // Закрытие модальных окон при клике вне их
         this.addThemeModal.addEventListener('click', (e) => {
             if (e.target === this.addThemeModal) {
                 this.closeAddThemeModal();
+            }
+        });
+        
+        this.settingsModal.addEventListener('click', (e) => {
+            if (e.target === this.settingsModal) {
+                this.closeSettingsModal();
             }
         });
         
@@ -151,7 +185,7 @@ class NotesApp {
         if (this.systemThemes.length > 0) {
             const systemHeader = document.createElement('div');
             systemHeader.className = 'theme-section-header';
-            systemHeader.textContent = '📚 Системные конспекты';
+            systemHeader.textContent = 'Конспекты';
             this.themeList.appendChild(systemHeader);
             
             this.systemThemes.forEach(theme => {
@@ -162,7 +196,7 @@ class NotesApp {
         // Затем пользовательские темы
         const userHeader = document.createElement('div');
         userHeader.className = 'theme-section-header';
-        userHeader.textContent = '📝 Мои темы';
+        userHeader.textContent = 'Заметки';
         this.themeList.appendChild(userHeader);
         
         if (this.themes.length > 0) {
@@ -172,7 +206,7 @@ class NotesApp {
         } else {
             const emptyMessage = document.createElement('div');
             emptyMessage.className = 'empty-message';
-            emptyMessage.textContent = 'Создайте первую тему';
+            emptyMessage.textContent = 'Создайте первую заметку';
             this.themeList.appendChild(emptyMessage);
         }
     }
@@ -188,9 +222,7 @@ class NotesApp {
         }
         
         const themeName = document.createElement('span');
-        themeName.innerHTML = isSystem ? 
-            `${theme.icon || '📖'} ${theme.name}` : 
-            theme.name;
+        themeName.textContent = theme.name;
         
         if (!isSystem) {
             const deleteBtn = document.createElement('button');
@@ -203,11 +235,7 @@ class NotesApp {
             themeItem.appendChild(themeName);
             themeItem.appendChild(deleteBtn);
         } else {
-            const lockIcon = document.createElement('span');
-            lockIcon.className = 'lock-icon';
-            lockIcon.textContent = '🔒';
             themeItem.appendChild(themeName);
-            themeItem.appendChild(lockIcon);
         }
         
         themeItem.onclick = () => this.openTheme(theme.id);
@@ -225,10 +253,23 @@ class NotesApp {
         this.addThemeModal.classList.remove('active');
     }
     
+    openSettingsModal() {
+        this.settingsModal.classList.add('active');
+    }
+    
+    closeSettingsModal() {
+        this.settingsModal.classList.remove('active');
+    }
+    
+    toggleTheme() {
+        this.isDarkTheme = this.themeToggle.checked;
+        this.applyTheme();
+    }
+    
     addNewTheme() {
         const themeName = this.newThemeName.value.trim();
         if (!themeName) {
-            alert('Пожалуйста, введите название темы');
+            alert('Пожалуйста, введите название заметки');
             return;
         }
         
@@ -252,7 +293,7 @@ class NotesApp {
             return;
         }
         
-        if (!confirm('Удалить эту тему и все её конспекты?')) {
+        if (!confirm('Удалить эту заметку?')) {
             return;
         }
         
@@ -280,7 +321,7 @@ class NotesApp {
             this.saveCurrentNote();
             
             this.currentThemeId = themeId;
-            this.currentThemeTitle.textContent = `${systemTheme.icon || ''} ${systemTheme.name}`;
+            this.currentThemeTitle.textContent = systemTheme.name;
             this.noteEditor.value = systemTheme.content || '';
             this.noteEditor.disabled = true;
             this.noteEditor.readOnly = true;
@@ -343,9 +384,9 @@ class NotesApp {
     }
     
     showSaveIndicator() {
-        this.saveNoteBtn.textContent = '✓ Сохранено';
+        this.saveNoteBtn.textContent = 'Сохранено';
         setTimeout(() => {
-            this.saveNoteBtn.textContent = '💾 Сохранить';
+            this.saveNoteBtn.textContent = 'Сохранить';
         }, 2000);
     }
     
