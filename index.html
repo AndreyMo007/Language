@@ -43,13 +43,15 @@
         <!-- Основная область -->
         <main class="main-content">
             <header class="main-header">
+                <button class="menu-toggle" id="menuToggle">←</button>
                 <button class="settings-btn" id="settingsBtn">☰</button>
                 <h1 id="currentThemeTitle">Выберите тему</h1>
                 <button class="save-btn" id="saveNoteBtn">Сохранить</button>
             </header>
             
             <div class="offline-indicator" id="offlineIndicator" style="display: none;">
-                Оффлайн режим - все данные сохранены локально
+                <span>Оффлайн режим - все данные сохранены локально</span>
+                <button class="offline-close" id="offlineClose">×</button>
             </div>
             
             <div class="editor-area">
