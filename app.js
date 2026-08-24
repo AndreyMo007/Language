@@ -7,7 +7,7 @@ class NotesApp {
         this.systemThemes = SystemNotes.getAllThemes();
         this.isDarkTheme = true;
         this.isOnline = navigator.onLine;
-        this.isSidebarOpen = false;
+        this.connectionQuality = 'good'; // 'good', 'medium', 'poor', 'offline'
         
         this.initElements();
         this.loadThemePreference();
@@ -15,7 +15,7 @@ class NotesApp {
         this.loadThemes();
         this.attachEventListeners();
         this.initServiceWorker();
-        this.initOnlineStatus();
+        this.initConnectionMonitoring();
     }
     
     initElements() {
@@ -38,26 +38,8 @@ class NotesApp {
         this.closeSettings = document.getElementById('closeSettings');
         this.themeToggle = document.getElementById('themeToggle');
         this.offlineIndicator = document.getElementById('offlineIndicator');
-        this.offlineClose = document.getElementById('offlineClose');
-    }
-    
-    initOnlineStatus() {
-        // Функция для обновления индикатора
-        const updateOnlineStatus = () => {
-            this.isOnline = navigator.onLine;
-            if (!this.isOnline && this.offlineIndicator) {
-                this.offlineIndicator.style.display = 'flex';
-            } else if (this.offlineIndicator) {
-                this.offlineIndicator.style.display = 'none';
-            }
-        };
-        
-        // Слушаем изменения онлайн/оффлайн статуса
-        window.addEventListener('online', updateOnlineStatus);
-        window.addEventListener('offline', updateOnlineStatus);
-        
-        // Показываем начальный статус
-        updateOnlineStatus();
+        this.closeOfflineBtn = document.getElementById('closeOfflineBtn');
+        this.connectionIndicator = document.getElementById('connectionIndicator');
     }
     
     loadThemePreference() {
@@ -146,7 +128,7 @@ class NotesApp {
         this.settingsBtn.addEventListener('click', () => this.openSettingsModal());
         this.closeSettings.addEventListener('click', () => this.closeSettingsModal());
         this.themeToggle.addEventListener('change', () => this.toggleTheme());
-        this.offlineClose.addEventListener('click', () => this.closeOfflineIndicator());
+        this.closeOfflineBtn.addEventListener('click', () => this.hideOfflineIndicator());
         
         // Закрытие модальных окон при клике вне их
         this.addThemeModal.addEventListener('click', (e) => {
@@ -177,6 +159,138 @@ class NotesApp {
         window.addEventListener('beforeunload', () => {
             this.saveCurrentNote();
         });
+        
+        // Обработка изменения размера окна
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                this.sidebar.classList.remove('open');
+                this.updateMenuIcon();
+            }
+        });
+    }
+    
+    initConnectionMonitoring() {
+        // Слушаем изменения онлайн/офлайн статуса
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.checkConnectionQuality();
+        });
+        
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            this.connectionQuality = 'offline';
+            this.updateConnectionIndicator();
+            this.showOfflineIndicator();
+        });
+        
+        // Периодически проверяем качество соединения
+        setInterval(() => {
+            if (this.isOnline) {
+                this.checkConnectionQuality();
+            }
+        }, 30000);
+        
+        // Начальная проверка
+        this.updateConnectionIndicator();
+    }
+    
+    checkConnectionQuality() {
+        if (!this.isOnline) {
+            this.connectionQuality = 'offline';
+            this.updateConnectionIndicator();
+            this.showOfflineIndicator();
+            return;
+        }
+        
+        // Проверяем качество соединения
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        
+        if (connection) {
+            if (connection.effectiveType === '4g') {
+                this.connectionQuality = 'good';
+            } else if (connection.effectiveType === '3g' || connection.effectiveType === '2g') {
+                this.connectionQuality = 'medium';
+            } else if (connection.effectiveType === 'slow-2g') {
+                this.connectionQuality = 'poor';
+            } else {
+                this.connectionQuality = 'good';
+            }
+        } else {
+            // Если API не поддерживается, проверяем через fetch
+            this.testConnectionSpeed();
+            return;
+        }
+        
+        this.updateConnectionIndicator();
+        this.updateOfflineIndicatorVisibility();
+    }
+    
+    testConnectionSpeed() {
+        const startTime = Date.now();
+        fetch('https://www.google.com/favicon.ico', { 
+            mode: 'no-cors',
+            cache: 'no-store' 
+        })
+        .then(() => {
+            const endTime = Date.now();
+            const duration = endTime - startTime;
+            
+            if (duration < 300) {
+                this.connectionQuality = 'good';
+            } else if (duration < 1000) {
+                this.connectionQuality = 'medium';
+            } else {
+                this.connectionQuality = 'poor';
+            }
+            
+            this.updateConnectionIndicator();
+            this.updateOfflineIndicatorVisibility();
+        })
+        .catch(() => {
+            this.connectionQuality = 'offline';
+            this.isOnline = false;
+            this.updateConnectionIndicator();
+            this.showOfflineIndicator();
+        });
+    }
+    
+    updateConnectionIndicator() {
+        this.connectionIndicator.className = 'connection-indicator';
+        
+        switch (this.connectionQuality) {
+            case 'good':
+                this.connectionIndicator.classList.add('online');
+                this.connectionIndicator.title = 'Онлайн - отличное соединение';
+                break;
+            case 'medium':
+                this.connectionIndicator.classList.add('medium');
+                this.connectionIndicator.title = 'Среднее качество соединения';
+                break;
+            case 'poor':
+                this.connectionIndicator.classList.add('poor');
+                this.connectionIndicator.title = 'Плохое качество соединения';
+                break;
+            case 'offline':
+                this.connectionIndicator.classList.add('offline');
+                this.connectionIndicator.title = 'Оффлайн - нет соединения';
+                break;
+        }
+    }
+    
+    updateOfflineIndicatorVisibility() {
+        if (this.connectionQuality === 'offline') {
+            this.showOfflineIndicator();
+        } else {
+            this.hideOfflineIndicator();
+        }
+    }
+    
+    showOfflineIndicator() {
+        this.offlineIndicator.style.display = 'flex';
+    }
+    
+    hideOfflineIndicator() {
+        this.offlineIndicator.style.display = 'none';
     }
     
     async installPwa() {
@@ -357,7 +471,8 @@ class NotesApp {
             
             // Закрываем боковое меню на мобильных
             if (window.innerWidth <= 768) {
-                this.closeSidebar();
+                this.sidebar.classList.remove('open');
+                this.updateMenuIcon();
             }
             return;
         }
@@ -381,7 +496,8 @@ class NotesApp {
         
         // Закрываем боковое меню на мобильных
         if (window.innerWidth <= 768) {
-            this.closeSidebar();
+            this.sidebar.classList.remove('open');
+            this.updateMenuIcon();
         }
     }
     
@@ -416,27 +532,15 @@ class NotesApp {
     }
     
     toggleSidebar() {
-        this.isSidebarOpen = !this.isSidebarOpen;
-        
-        if (this.isSidebarOpen) {
-            this.sidebar.classList.add('open');
-            this.menuToggle.textContent = '→';
-            this.menuToggle.title = 'Закрыть меню';
+        this.sidebar.classList.toggle('open');
+        this.updateMenuIcon();
+    }
+    
+    updateMenuIcon() {
+        if (this.sidebar.classList.contains('open')) {
+            this.menuToggle.textContent = '❯';
         } else {
-            this.closeSidebar();
-        }
-    }
-    
-    closeSidebar() {
-        this.isSidebarOpen = false;
-        this.sidebar.classList.remove('open');
-        this.menuToggle.textContent = '←';
-        this.menuToggle.title = 'Открыть меню';
-    }
-    
-    closeOfflineIndicator() {
-        if (this.offlineIndicator) {
-            this.offlineIndicator.style.display = 'none';
+            this.menuToggle.textContent = '❮';
         }
     }
     
@@ -445,18 +549,7 @@ class NotesApp {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('service-worker.js')
                     .then(registration => {
-                        console.log('Service Worker зарегистрирован, оффлайн-режим доступен');
-                        
-                        // Проверяем обновления
-                        registration.addEventListener('updatefound', () => {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // Доступно обновление
-                                    console.log('Доступно обновление приложения');
-                                }
-                            });
-                        });
+                        console.log('Service Worker зарегистрирован:', registration);
                     })
                     .catch(error => {
                         console.log('Ошибка регистрации Service Worker:', error);
