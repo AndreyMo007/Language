@@ -7,6 +7,7 @@ class NotesApp {
         this.systemThemes = SystemNotes.getAllThemes();
         this.isDarkTheme = true;
         this.isOnline = navigator.onLine;
+        this.isSidebarOpen = false;
         
         this.initElements();
         this.loadThemePreference();
@@ -37,6 +38,7 @@ class NotesApp {
         this.closeSettings = document.getElementById('closeSettings');
         this.themeToggle = document.getElementById('themeToggle');
         this.offlineIndicator = document.getElementById('offlineIndicator');
+        this.offlineClose = document.getElementById('offlineClose');
     }
     
     initOnlineStatus() {
@@ -44,7 +46,7 @@ class NotesApp {
         const updateOnlineStatus = () => {
             this.isOnline = navigator.onLine;
             if (!this.isOnline && this.offlineIndicator) {
-                this.offlineIndicator.style.display = 'block';
+                this.offlineIndicator.style.display = 'flex';
             } else if (this.offlineIndicator) {
                 this.offlineIndicator.style.display = 'none';
             }
@@ -140,9 +142,11 @@ class NotesApp {
         this.cancelAddTheme.addEventListener('click', () => this.closeAddThemeModal());
         this.confirmAddTheme.addEventListener('click', () => this.addNewTheme());
         this.saveNoteBtn.addEventListener('click', () => this.saveCurrentNote());
+        this.menuToggle.addEventListener('click', () => this.toggleSidebar());
         this.settingsBtn.addEventListener('click', () => this.openSettingsModal());
         this.closeSettings.addEventListener('click', () => this.closeSettingsModal());
         this.themeToggle.addEventListener('change', () => this.toggleTheme());
+        this.offlineClose.addEventListener('click', () => this.closeOfflineIndicator());
         
         // Закрытие модальных окон при клике вне их
         this.addThemeModal.addEventListener('click', (e) => {
@@ -353,7 +357,7 @@ class NotesApp {
             
             // Закрываем боковое меню на мобильных
             if (window.innerWidth <= 768) {
-                this.sidebar.classList.remove('open');
+                this.closeSidebar();
             }
             return;
         }
@@ -377,7 +381,7 @@ class NotesApp {
         
         // Закрываем боковое меню на мобильных
         if (window.innerWidth <= 768) {
-            this.sidebar.classList.remove('open');
+            this.closeSidebar();
         }
     }
     
@@ -412,7 +416,28 @@ class NotesApp {
     }
     
     toggleSidebar() {
-        this.sidebar.classList.toggle('open');
+        this.isSidebarOpen = !this.isSidebarOpen;
+        
+        if (this.isSidebarOpen) {
+            this.sidebar.classList.add('open');
+            this.menuToggle.textContent = '→';
+            this.menuToggle.title = 'Закрыть меню';
+        } else {
+            this.closeSidebar();
+        }
+    }
+    
+    closeSidebar() {
+        this.isSidebarOpen = false;
+        this.sidebar.classList.remove('open');
+        this.menuToggle.textContent = '←';
+        this.menuToggle.title = 'Открыть меню';
+    }
+    
+    closeOfflineIndicator() {
+        if (this.offlineIndicator) {
+            this.offlineIndicator.style.display = 'none';
+        }
     }
     
     initServiceWorker() {
