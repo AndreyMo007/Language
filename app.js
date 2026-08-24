@@ -4,6 +4,7 @@ class NotesApp {
         this.currentThemeId = null;
         this.autoSaveTimer = null;
         this.deferredPrompt = null;
+        this.systemThemes = SystemNotes.getAllThemes();
         
         this.initElements();
         this.checkInstallMode();
@@ -27,14 +28,10 @@ class NotesApp {
         this.newThemeName = document.getElementById('newThemeName');
         this.cancelAddTheme = document.getElementById('cancelAddTheme');
         this.confirmAddTheme = document.getElementById('confirmAddTheme');
-        this.previewArea = document.getElementById('previewArea');
-        this.toolbar = document.getElementById('toolbar');
-        this.exportBtn = document.getElementById('exportBtn');
-        this.importBtn = document.getElementById('importBtn');
-        this.importFileInput = document.getElementById('importFileInput');
     }
     
     checkInstallMode() {
+        // Проверяем, запущено ли приложение как PWA
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
                           || window.navigator.standalone 
                           || document.referrer.includes('android-app://');
@@ -45,6 +42,7 @@ class NotesApp {
             this.showInstallScreen();
         }
         
+        // Слушаем изменения режима отображения
         window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
             if (e.matches) {
                 this.showApp();
@@ -61,23 +59,30 @@ class NotesApp {
         this.installScreen.style.display = 'none';
         this.app.style.display = 'flex';
         
-        if (this.themes.length > 0) {
-            const lastThemeId = localStorage.getItem('notesAppLastTheme');
-            if (lastThemeId && this.themes.find(t => t.id === lastThemeId)) {
+        // Открываем последнюю тему после показа приложения
+        const lastThemeId = localStorage.getItem('notesAppLastTheme');
+        if (lastThemeId) {
+            // Проверяем, не системная ли это тема
+            if (SystemNotes.isSystemTheme(lastThemeId)) {
+                this.openTheme(lastThemeId);
+            } else if (this.themes.find(t => t.id === lastThemeId)) {
                 this.openTheme(lastThemeId);
             }
         }
     }
     
     attachEventListeners() {
+        // Обработка установки PWA
         this.installBtn.addEventListener('click', () => this.installPwa());
         
+        // Перехватываем событие beforeinstallprompt
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             this.deferredPrompt = e;
             this.installBtn.style.display = 'block';
         });
         
+        // Обработка успешной установки
         window.addEventListener('appinstalled', () => {
             console.log('PWA установлено');
             this.deferredPrompt = null;
@@ -89,46 +94,27 @@ class NotesApp {
         this.confirmAddTheme.addEventListener('click', () => this.addNewTheme());
         this.saveNoteBtn.addEventListener('click', () => this.saveCurrentNote());
         this.menuToggle.addEventListener('click', () => this.toggleSidebar());
-        this.exportBtn.addEventListener('click', () => this.exportAllNotes());
-        this.importBtn.addEventListener('click', () => this.importFileInput.click());
-        this.importFileInput.addEventListener('change', (e) => this.importNotes(e));
         
+        // Закрытие модального окна при клике вне его
         this.addThemeModal.addEventListener('click', (e) => {
             if (e.target === this.addThemeModal) {
                 this.closeAddThemeModal();
             }
         });
         
+        // Автосохранение при вводе
         this.noteEditor.addEventListener('input', () => {
             this.startAutoSave();
         });
         
+        // Обработка Enter в модальном окне
         this.newThemeName.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.addNewTheme();
             }
         });
         
-        // Горячие клавиши
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                switch(e.key.toLowerCase()) {
-                    case 's':
-                        e.preventDefault();
-                        this.saveCurrentNote();
-                        break;
-                    case 'b':
-                        e.preventDefault();
-                        this.formatText('bold');
-                        break;
-                    case 'i':
-                        e.preventDefault();
-                        this.formatText('italic');
-                        break;
-                }
-            }
-        });
-        
+        // Сохранение перед закрытием
         window.addEventListener('beforeunload', () => {
             this.saveCurrentNote();
         });
@@ -141,6 +127,7 @@ class NotesApp {
             console.log('Результат установки:', result.outcome);
             this.deferredPrompt = null;
         } else {
+            // Fallback для iOS
             alert('Нажмите кнопку "Поделиться" и выберите "На экран «Домой»"');
         }
     }
@@ -149,8 +136,8 @@ class NotesApp {
         const savedThemes = localStorage.getItem('notesAppThemes');
         if (savedThemes) {
             this.themes = JSON.parse(savedThemes);
-            this.renderThemes();
         }
+        this.renderThemes();
     }
     
     saveThemes() {
@@ -160,24 +147,52 @@ class NotesApp {
     renderThemes() {
         this.themeList.innerHTML = '';
         
-        if (this.themes.length === 0) {
+        // Сначала показываем системные темы
+        if (this.systemThemes.length > 0) {
+            const systemHeader = document.createElement('div');
+            systemHeader.className = 'theme-section-header';
+            systemHeader.textContent = '📚 Системные конспекты';
+            this.themeList.appendChild(systemHeader);
+            
+            this.systemThemes.forEach(theme => {
+                this.renderThemeItem(theme, true);
+            });
+        }
+        
+        // Затем пользовательские темы
+        const userHeader = document.createElement('div');
+        userHeader.className = 'theme-section-header';
+        userHeader.textContent = '📝 Мои темы';
+        this.themeList.appendChild(userHeader);
+        
+        if (this.themes.length > 0) {
+            this.themes.forEach(theme => {
+                this.renderThemeItem(theme, false);
+            });
+        } else {
             const emptyMessage = document.createElement('div');
             emptyMessage.className = 'empty-message';
             emptyMessage.textContent = 'Создайте первую тему';
             this.themeList.appendChild(emptyMessage);
-            return;
+        }
+    }
+    
+    renderThemeItem(theme, isSystem) {
+        const themeItem = document.createElement('div');
+        themeItem.className = 'theme-item';
+        if (theme.id === this.currentThemeId) {
+            themeItem.classList.add('active');
+        }
+        if (isSystem) {
+            themeItem.classList.add('system-theme');
         }
         
-        this.themes.forEach(theme => {
-            const themeItem = document.createElement('div');
-            themeItem.className = 'theme-item';
-            if (theme.id === this.currentThemeId) {
-                themeItem.classList.add('active');
-            }
-            
-            const themeName = document.createElement('span');
-            themeName.textContent = theme.name;
-            
+        const themeName = document.createElement('span');
+        themeName.innerHTML = isSystem ? 
+            `${theme.icon || '📖'} ${theme.name}` : 
+            theme.name;
+        
+        if (!isSystem) {
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'delete-theme';
             deleteBtn.textContent = '×';
@@ -185,13 +200,19 @@ class NotesApp {
                 e.stopPropagation();
                 this.deleteTheme(theme.id);
             };
-            
             themeItem.appendChild(themeName);
             themeItem.appendChild(deleteBtn);
-            themeItem.onclick = () => this.openTheme(theme.id);
-            
-            this.themeList.appendChild(themeItem);
-        });
+        } else {
+            const lockIcon = document.createElement('span');
+            lockIcon.className = 'lock-icon';
+            lockIcon.textContent = '🔒';
+            themeItem.appendChild(themeName);
+            themeItem.appendChild(lockIcon);
+        }
+        
+        themeItem.onclick = () => this.openTheme(theme.id);
+        
+        this.themeList.appendChild(themeItem);
     }
     
     openAddThemeModal() {
@@ -207,16 +228,14 @@ class NotesApp {
     addNewTheme() {
         const themeName = this.newThemeName.value.trim();
         if (!themeName) {
-            this.showNotification('Введите название темы', 'error');
+            alert('Пожалуйста, введите название темы');
             return;
         }
         
         const newTheme = {
             id: Date.now().toString(),
             name: themeName,
-            content: '',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            content: ''
         };
         
         this.themes.push(newTheme);
@@ -224,10 +243,15 @@ class NotesApp {
         this.renderThemes();
         this.openTheme(newTheme.id);
         this.closeAddThemeModal();
-        this.showNotification('Тема создана');
     }
     
     deleteTheme(themeId) {
+        // Проверяем, не системная ли это тема
+        if (SystemNotes.isSystemTheme(themeId)) {
+            alert('Системные конспекты нельзя удалить');
+            return;
+        }
+        
         if (!confirm('Удалить эту тему и все её конспекты?')) {
             return;
         }
@@ -239,15 +263,40 @@ class NotesApp {
             this.currentThemeId = null;
             this.noteEditor.value = '';
             this.noteEditor.disabled = true;
+            this.noteEditor.readOnly = false;
             this.currentThemeTitle.textContent = 'Выберите тему';
+            this.saveNoteBtn.disabled = true;
             localStorage.removeItem('notesAppLastTheme');
         }
         
         this.renderThemes();
-        this.showNotification('Тема удалена', 'error');
     }
     
     openTheme(themeId) {
+        // Проверяем, не системная ли это тема
+        const systemTheme = SystemNotes.getThemeById(themeId);
+        
+        if (systemTheme) {
+            this.saveCurrentNote();
+            
+            this.currentThemeId = themeId;
+            this.currentThemeTitle.textContent = `${systemTheme.icon || ''} ${systemTheme.name}`;
+            this.noteEditor.value = systemTheme.content || '';
+            this.noteEditor.disabled = true;
+            this.noteEditor.readOnly = true;
+            this.saveNoteBtn.disabled = true;
+            
+            localStorage.setItem('notesAppLastTheme', themeId);
+            this.renderThemes();
+            
+            // Закрываем боковое меню на мобильных
+            if (window.innerWidth <= 768) {
+                this.sidebar.classList.remove('open');
+            }
+            return;
+        }
+        
+        // Обычная пользовательская тема
         const theme = this.themes.find(t => t.id === themeId);
         if (!theme) return;
         
@@ -257,11 +306,14 @@ class NotesApp {
         this.currentThemeTitle.textContent = theme.name;
         this.noteEditor.value = theme.content || '';
         this.noteEditor.disabled = false;
+        this.noteEditor.readOnly = false;
+        this.saveNoteBtn.disabled = false;
         this.noteEditor.focus();
         
         localStorage.setItem('notesAppLastTheme', themeId);
         this.renderThemes();
         
+        // Закрываем боковое меню на мобильных
         if (window.innerWidth <= 768) {
             this.sidebar.classList.remove('open');
         }
@@ -270,10 +322,14 @@ class NotesApp {
     saveCurrentNote() {
         if (!this.currentThemeId) return;
         
+        // Проверяем, не системная ли это тема
+        if (SystemNotes.isSystemTheme(this.currentThemeId)) {
+            return;
+        }
+        
         const theme = this.themes.find(t => t.id === this.currentThemeId);
         if (theme) {
             theme.content = this.noteEditor.value;
-            theme.updatedAt = new Date().toISOString();
             this.saveThemes();
             this.showSaveIndicator();
         }
@@ -295,241 +351,6 @@ class NotesApp {
     
     toggleSidebar() {
         this.sidebar.classList.toggle('open');
-    }
-    
-    // Форматирование текста
-    formatText(type) {
-        if (!this.currentThemeId) {
-            this.showNotification('Выберите тему', 'error');
-            return;
-        }
-        
-        const editor = this.noteEditor;
-        const start = editor.selectionStart;
-        const end = editor.selectionEnd;
-        const selectedText = editor.value.substring(start, end);
-        
-        let formattedText = '';
-        
-        switch(type) {
-            case 'h1':
-                formattedText = `# ${selectedText || 'Заголовок 1'}`;
-                break;
-            case 'h2':
-                formattedText = `## ${selectedText || 'Заголовок 2'}`;
-                break;
-            case 'h3':
-                formattedText = `### ${selectedText || 'Заголовок 3'}`;
-                break;
-            case 'bold':
-                formattedText = `**${selectedText || 'жирный текст'}**`;
-                break;
-            case 'italic':
-                formattedText = `*${selectedText || 'курсив'}*`;
-                break;
-            case 'underline':
-                formattedText = `<u>${selectedText || 'подчеркнутый текст'}</u>`;
-                break;
-            case 'strike':
-                formattedText = `~~${selectedText || 'зачеркнутый текст'}~~`;
-                break;
-            case 'list':
-                formattedText = this.formatList(selectedText, false);
-                break;
-            case 'numbered-list':
-                formattedText = this.formatList(selectedText, true);
-                break;
-            case 'checkbox':
-                formattedText = `- [ ] ${selectedText || 'Задача'}`;
-                break;
-            case 'quote':
-                formattedText = `> ${selectedText || 'Цитата'}`;
-                break;
-            case 'code':
-                formattedText = `\`${selectedText || 'код'}\``;
-                break;
-            case 'link':
-                formattedText = `[${selectedText || 'Текст ссылки'}](https://example.com)`;
-                break;
-            case 'hr':
-                formattedText = `\n---\n`;
-                break;
-            default:
-                return;
-        }
-        
-        editor.value = editor.value.substring(0, start) + 
-                       formattedText + 
-                       editor.value.substring(end);
-        
-        editor.focus();
-        const newPosition = start + formattedText.length;
-        editor.setSelectionRange(newPosition, newPosition);
-        
-        this.startAutoSave();
-    }
-    
-    formatList(text, numbered) {
-        const lines = text.split('\n');
-        return lines.map((line, index) => {
-            if (numbered) {
-                return `${index + 1}. ${line}`;
-            } else {
-                return `- ${line}`;
-            }
-        }).join('\n');
-    }
-    
-    // Переключение вкладок редактора
-    switchTab(tab) {
-        const tabs = document.querySelectorAll('.tab-btn');
-        tabs.forEach(t => t.classList.remove('active'));
-        
-        if (tab === 'write') {
-            this.noteEditor.style.display = 'block';
-            this.previewArea.style.display = 'none';
-            tabs[0].classList.add('active');
-        } else {
-            this.noteEditor.style.display = 'none';
-            this.previewArea.style.display = 'block';
-            tabs[1].classList.add('active');
-            this.renderPreview();
-        }
-    }
-    
-    renderPreview() {
-        const markdown = this.noteEditor.value;
-        this.previewArea.innerHTML = this.markdownToHtml(markdown);
-    }
-    
-    markdownToHtml(markdown) {
-        let html = markdown;
-        
-        // Код блоки
-        html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
-        
-        // Заголовки
-        html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
-        html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
-        html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
-        
-        // Жирный текст
-        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        
-        // Курсив
-        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        
-        // Зачеркнутый текст
-        html = html.replace(/~~(.*?)~~/g, '<del>$1</del>');
-        
-        // Чекбоксы
-        html = html.replace(/- \[ \] (.*)/g, '<input type="checkbox"> $1');
-        html = html.replace(/- \[x\] (.*)/g, '<input type="checkbox" checked> $1');
-        
-        // Списки
-        html = html.replace(/^- (.*$)/gm, '<li>$1</li>');
-        html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-        
-        // Нумерованные списки
-        html = html.replace(/^\d+\. (.*$)/gm, '<li>$1</li>');
-        
-        // Цитаты
-        html = html.replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>');
-        
-        // Код
-        html = html.replace(/`(.*?)`/g, '<code>$1</code>');
-        
-        // Ссылки
-        html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
-        
-        // Изображения
-        html = html.replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1">');
-        
-        // Горизонтальная линия
-        html = html.replace(/^---$/gm, '<hr>');
-        
-        // Подчеркивание
-        html = html.replace(/<u>(.*?)<\/u>/g, '<u>$1</u>');
-        
-        // Переносы строк
-        html = html.replace(/\n\n/g, '</p><p>');
-        html = html.replace(/\n/g, '<br>');
-        
-        // Оборачивание в параграфы
-        html = `<div class="markdown-content">${html}</div>`;
-        
-        return html;
-    }
-    
-    // Экспорт всех заметок
-    exportAllNotes() {
-        const exportData = {
-            version: '1.0',
-            exportedAt: new Date().toISOString(),
-            themes: this.themes
-        };
-        
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `конспекты_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        this.showNotification('Данные экспортированы');
-    }
-    
-    // Импорт заметок
-    importNotes(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const importData = JSON.parse(e.target.result);
-                
-                if (importData.themes && Array.isArray(importData.themes)) {
-                    if (confirm(`Импортировать ${importData.themes.length} тем?`)) {
-                        this.themes = importData.themes;
-                        this.saveThemes();
-                        this.renderThemes();
-                        
-                        if (this.themes.length > 0) {
-                            this.openTheme(this.themes[0].id);
-                        }
-                        
-                        this.showNotification('Данные импортированы');
-                    }
-                } else {
-                    this.showNotification('Неверный формат файла', 'error');
-                }
-            } catch (error) {
-                this.showNotification('Ошибка импорта', 'error');
-            }
-        };
-        
-        reader.readAsText(file);
-        event.target.value = '';
-    }
-    
-    // Уведомления
-    showNotification(message, type = 'success') {
-        const notification = document.createElement('div');
-        notification.className = 'notification';
-        notification.textContent = message;
-        
-        if (type === 'error') {
-            notification.style.background = '#f44336';
-        }
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => notification.remove(), 300);
-        }, 2000);
     }
     
     initServiceWorker() {
