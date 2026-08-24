@@ -1,59 +1,33 @@
 // Системные конспекты - только для чтения
-// Здесь вы можете добавлять свои системные темы и конспекты
-
 const SystemNotes = {
-    // Коллекция системных тем
     themes: [
         {
             id: 'system-1',
-            name: 'Основы JavaScript',
-            isSystem: true,
-            isReadOnly: true,
+            name: 'JavaScript',
             content: `
-# Основы JavaScript
+# JavaScript
 
 ## Переменные
-
-### Типы переменных:
 - **let** - изменяемая переменная
-- **const** - константа (не изменяется)
-- **var** - устаревший способ (не рекомендуется)
-
-### Примеры:
-\`\`\`javascript
-let name = "Иван";
-const PI = 3.14;
-var oldVar = "устарело";
-\`\`\`
+- **const** - константа
+- **var** - устаревший способ
 
 ## Функции
-
-### Стрелочные функции:
 \`\`\`javascript
 const sum = (a, b) => a + b;
-const multiply = (a, b) => {
+function multiply(a, b) {
     return a * b;
-};
+}
 \`\`\`
 
 ## Массивы
-
-### Основные методы:
 - **push()** - добавить элемент
-- **pop()** - удалить последний элемент
-- **map()** - преобразовать массив
-- **filter()** - отфильтровать массив
-- **reduce()** - свернуть массив
-
-### Пример:
-\`\`\`javascript
-const numbers = [1, 2, 3, 4, 5];
-const doubled = numbers.map(n => n * 2);
-const even = numbers.filter(n => n % 2 === 0);
-\`\`\`
+- **pop()** - удалить последний
+- **map()** - преобразовать
+- **filter()** - отфильтровать
+- **reduce()** - свернуть
 
 ## Объекты
-
 \`\`\`javascript
 const person = {
     name: "Анна",
@@ -64,28 +38,35 @@ const person = {
 };
 \`\`\`
 
----
-*Этот конспект доступен только для чтения*
+## Промисы
+\`\`\`javascript
+fetch('url')
+    .then(response => response.json())
+    .then(data => console.log(data))
+    .catch(error => console.error(error));
+\`\`\`
+
+## Async/Await
+\`\`\`javascript
+async function getData() {
+    try {
+        const response = await fetch('url');
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error(error);
+    }
+}
+\`\`\`
             `
         },
         {
             id: 'system-2',
-            name: 'CSS Шпаргалка',
-            isSystem: true,
-            isReadOnly: true,
+            name: 'CSS',
             content: `
-# CSS Шпаргалка
+# CSS
 
 ## Flexbox
-
-### Основные свойства контейнера:
-- **display: flex** - включить flexbox
-- **flex-direction** - направление (row, column)
-- **justify-content** - выравнивание по главной оси
-- **align-items** - выравнивание по поперечной оси
-- **gap** - расстояние между элементами
-
-### Пример:
 \`\`\`css
 .container {
     display: flex;
@@ -97,20 +78,15 @@ const person = {
 \`\`\`
 
 ## Grid
-
-### Основные свойства:
 \`\`\`css
 .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: auto;
     gap: 10px;
 }
 \`\`\`
 
 ## Анимации
-
-### Transition:
 \`\`\`css
 .button {
     transition: all 0.3s ease;
@@ -122,7 +98,6 @@ const person = {
 \`\`\`
 
 ## Медиа-запросы
-
 \`\`\`css
 @media (max-width: 768px) {
     .container {
@@ -131,142 +106,227 @@ const person = {
 }
 \`\`\`
 
----
-*Этот конспект доступен только для чтения*
+## Псевдоклассы
+- **:hover** - при наведении
+- **:active** - при нажатии
+- **:focus** - при фокусе
+- **:first-child** - первый элемент
+- **:last-child** - последний элемент
             `
         },
         {
             id: 'system-3',
-            name: 'Linux Команды',
-            isSystem: true,
-            isReadOnly: true,
+            name: 'Python',
             content: `
-# Основные команды Linux
+# Python
+
+## Переменные и типы
+\`\`\`python
+name = "Иван"
+age = 25
+height = 1.75
+is_student = True
+\`\`\`
+
+## Функции
+\`\`\`python
+def greet(name):
+    return f"Привет, {name}!"
+
+def sum_numbers(*args):
+    return sum(args)
+\`\`\`
+
+## Списки
+\`\`\`python
+numbers = [1, 2, 3, 4, 5]
+numbers.append(6)
+numbers.remove(3)
+squared = [x**2 for x in numbers]
+\`\`\`
+
+## Словари
+\`\`\`python
+person = {
+    "name": "Анна",
+    "age": 25,
+    "city": "Москва"
+}
+print(person["name"])
+\`\`\`
+
+## Классы
+\`\`\`python
+class Dog:
+    def __init__(self, name):
+        self.name = name
+    
+    def bark(self):
+        return f"{self.name} говорит гав!"
+\`\`\`
 
 ## Работа с файлами
-
-### Навигация:
-- **pwd** - показать текущую директорию
-- **ls** - список файлов
-- **cd** - сменить директорию
-- **mkdir** - создать директорию
-- **rm** - удалить файл
-- **rm -rf** - удалить директорию рекурсивно
-
-### Копирование и перемещение:
-- **cp** - копировать
-- **mv** - переместить/переименовать
-- **touch** - создать пустой файл
-
-## Права доступа
-
-### Изменение прав:
-\`\`\`bash
-chmod 755 script.sh
-chmod +x script.sh
-chown user:group file.txt
+\`\`\`python
+with open("file.txt", "r") as f:
+    content = f.read()
 \`\`\`
-
-## Системная информация
-
-### Просмотр информации:
-- **top** - процессы в реальном времени
-- **df -h** - свободное место на дисках
-- **free -h** - использование памяти
-- **uname -a** - информация о системе
-
-## Поиск
-
-### Поиск файлов:
-\`\`\`bash
-find / -name "*.log"
-grep -r "текст" /path/to/search
-which command
-\`\`\`
-
----
-*Этот конспект доступен только для чтения*
             `
         },
         {
             id: 'system-4',
-            name: 'Git Команды',
-            isSystem: true,
-            isReadOnly: true,
+            name: 'HTML',
             content: `
-# Основные команды Git
+# HTML
 
-## Настройка
-
-### Первоначальная настройка:
-\`\`\`bash
-git config --global user.name "Ваше Имя"
-git config --global user.email "your@email.com"
+## Базовая структура
+\`\`\`html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Заголовок</title>
+</head>
+<body>
+    <h1>Привет, мир!</h1>
+</body>
+</html>
 \`\`\`
 
-## Основные команды
+## Основные теги
+- **\<div\>** - блок
+- **\<span\>** - строчный элемент
+- **\<p\>** - параграф
+- **\<a href="url"\>** - ссылка
+- **\<img src="url"\>** - изображение
 
-### Создание репозитория:
-- **git init** - инициализировать новый репозиторий
-- **git clone <url>** - клонировать существующий
-
-### Работа с изменениями:
-- **git status** - проверить статус
-- **git add .** - добавить все изменения
-- **git commit -m "message"** - закоммитить
-- **git push** - отправить на сервер
-- **git pull** - получить с сервера
-
-## Ветвление
-
-### Работа с ветками:
-\`\`\`bash
-git branch feature-new
-git checkout feature-new
-git merge feature-new
-git branch -d feature-new
+## Формы
+\`\`\`html
+<form action="/submit" method="POST">
+    <input type="text" name="username">
+    <input type="password" name="password">
+    <button type="submit">Отправить</button>
+</form>
 \`\`\`
 
-## Отмена изменений
+## Семантические теги
+- **\<header\>** - шапка
+- **\<nav\>** - навигация
+- **\<main\>** - основное содержимое
+- **\<article\>** - статья
+- **\<footer\>** - подвал
+            `
+        },
+        {
+            id: 'system-5',
+            name: 'C++',
+            content: `
+# C++
 
-### Откат:
-\`\`\`bash
-git reset --hard HEAD~1
-git revert <commit-hash>
-git checkout -- file.txt
+## Базовая программа
+\`\`\`cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "Привет, мир!" << endl;
+    return 0;
+}
 \`\`\`
 
-## Полезные команды
+## Переменные
+\`\`\`cpp
+int age = 25;
+float height = 1.75;
+char grade = 'A';
+string name = "Иван";
+bool isStudent = true;
+\`\`\`
 
-### История и логи:
-- **git log --oneline** - краткая история
-- **git diff** - посмотреть изменения
-- **git stash** - временно скрыть изменения
-- **git stash pop** - вернуть скрытые изменения
+## Функции
+\`\`\`cpp
+int sum(int a, int b) {
+    return a + b;
+}
 
----
-*Этот конспект доступен только для чтения*
+void printMessage(string message) {
+    cout << message << endl;
+}
+\`\`\`
+
+## Классы
+\`\`\`cpp
+class Dog {
+public:
+    string name;
+    
+    Dog(string n) {
+        name = n;
+    }
+    
+    void bark() {
+        cout << name << " говорит гав!" << endl;
+    }
+};
+\`\`\`
+
+## Указатели
+\`\`\`cpp
+int number = 10;
+int* ptr = &number;
+cout << *ptr << endl; // 10
+\`\`\`
+            `
+        },
+        {
+            id: 'system-6',
+            name: 'Web-разработка',
+            content: `
+# Web-разработка
+
+## Frontend
+- **HTML** - структура
+- **CSS** - стили
+- **JavaScript** - интерактивность
+- **React/Vue/Angular** - фреймворки
+
+## Backend
+- **Node.js** - JavaScript на сервере
+- **Python (Django/Flask)** - Python фреймворки
+- **PHP** - классический backend
+- **Ruby on Rails** - Ruby фреймворк
+
+## Базы данных
+- **MySQL** - реляционная
+- **PostgreSQL** - продвинутая реляционная
+- **MongoDB** - NoSQL
+- **Redis** - кэширование
+
+## DevOps
+- **Git** - контроль версий
+- **Docker** - контейнеризация
+- **Nginx** - веб-сервер
+- **CI/CD** - непрерывная интеграция
+
+## API
+- **REST** - архитектурный стиль
+- **GraphQL** - язык запросов
+- **WebSocket** - двусторонняя связь
             `
         }
     ],
 
-    // Метод для получения всех системных тем
     getAllThemes() {
         return this.themes;
     },
 
-    // Метод для получения конкретной темы по ID
     getThemeById(id) {
         return this.themes.find(theme => theme.id === id);
     },
 
-    // Метод для проверки, является ли тема системной
     isSystemTheme(themeId) {
         return this.themes.some(theme => theme.id === themeId);
     }
 };
 
-// Экспорт для использования в основном приложении
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SystemNotes;
 }
