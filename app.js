@@ -6,6 +6,7 @@ class NotesApp {
         this.deferredPrompt = null;
         this.systemThemes = SystemNotes.getAllThemes();
         this.isDarkTheme = true;
+        this.isOnline = navigator.onLine;
         
         this.initElements();
         this.loadThemePreference();
@@ -13,6 +14,7 @@ class NotesApp {
         this.loadThemes();
         this.attachEventListeners();
         this.initServiceWorker();
+        this.initOnlineStatus();
     }
     
     initElements() {
@@ -34,6 +36,30 @@ class NotesApp {
         this.confirmAddTheme = document.getElementById('confirmAddTheme');
         this.closeSettings = document.getElementById('closeSettings');
         this.themeToggle = document.getElementById('themeToggle');
+    }
+    
+    initOnlineStatus() {
+        // Слушаем изменения онлайн/оффлайн статуса
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.showOnlineStatus();
+        });
+        
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            this.showOnlineStatus();
+        });
+        
+        // Показываем начальный статус
+        this.showOnlineStatus();
+    }
+    
+    showOnlineStatus() {
+        // Можно добавить индикатор статуса в интерфейс
+        if (!this.isOnline) {
+            console.log('Приложение работает в оффлайн-режиме');
+            // Все данные сохраняются локально и доступны
+        }
     }
     
     loadThemePreference() {
@@ -399,7 +425,18 @@ class NotesApp {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('service-worker.js')
                     .then(registration => {
-                        console.log('Service Worker зарегистрирован:', registration);
+                        console.log('Service Worker зарегистрирован, оффлайн-режим доступен');
+                        
+                        // Проверяем обновления
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Доступно обновление
+                                    console.log('Доступно обновление приложения');
+                                }
+                            });
+                        });
                     })
                     .catch(error => {
                         console.log('Ошибка регистрации Service Worker:', error);
