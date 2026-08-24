@@ -1,4 +1,4 @@
-const CACHE_NAME = 'notes-app-v3';
+const CACHE_NAME = 'notes-app-v4';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -13,8 +13,12 @@ self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                console.log('Кэширование ресурсов');
+                console.log('Кэширование ресурсов для оффлайн-работы');
                 return cache.addAll(ASSETS_TO_CACHE);
+            })
+            .then(() => {
+                // Принудительная активация без ожидания
+                return self.skipWaiting();
             })
     );
 });
@@ -31,39 +35,73 @@ self.addEventListener('activate', event => {
                     }
                 })
             );
+        }).then(() => {
+            // Захватываем контроль над всеми клиентами
+            return self.clients.claim();
         })
     );
 });
 
-// Перехват запросов
+// Стратегия: Cache First, затем Network
 self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
             .then(response => {
+                // Если ресурс найден в кэше - возвращаем его
                 if (response) {
                     return response;
                 }
                 
+                // Если ресурса нет в кэше - пытаемся получить из сети
                 return fetch(event.request)
-                    .then(response => {
-                        if (!response || response.status !== 200 || response.type !== 'basic') {
-                            return response;
+                    .then(networkResponse => {
+                        // Проверяем, что ответ валидный
+                        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                            return networkResponse;
                         }
                         
-                        const responseToCache = response.clone();
+                        // Кэшируем полученный ресурс для будущего оффлайн-использования
+                        const responseToCache = networkResponse.clone();
                         
                         caches.open(CACHE_NAME)
                             .then(cache => {
                                 cache.put(event.request, responseToCache);
                             });
                         
-                        return response;
+                        return networkResponse;
                     })
                     .catch(() => {
+                        // Если сеть недоступна и это навигация - возвращаем index.html
                         if (event.request.mode === 'navigate') {
                             return caches.match('./index.html');
                         }
+                        
+                        // Для других запросов возвращаем заглушку
+                        return new Response('Оффлайн режим', {
+                            status: 503,
+                            statusText: 'Service Unavailable',
+                            headers: new Headers({
+                                'Content-Type': 'text/plain; charset=utf-8'
+                            })
+                        });
                     });
             })
     );
+});
+
+// Обработка сообщений от клиента
+self.addEventListener('message', event => {
+    if (event.data === 'skipWaiting') {
+        self.skipWaiting();
+    }
+});
+
+// Периодическая синхронизация (если поддерживается)
+self.addEventListener('sync', event => {
+    if (event.tag === 'sync-notes') {
+        event.waitUntil(
+            // Здесь можно добавить синхронизацию данных
+            Promise.resolve()
+        );
+    }
 });
