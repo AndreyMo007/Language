@@ -4,34 +4,10 @@
     box-sizing: border-box;
 }
 
-:root {
-    --bg-primary: #1a1a1a;
-    --bg-secondary: #2d2d2d;
-    --bg-tertiary: #3d3d3d;
-    --bg-hover: #4a4a4a;
-    --text-primary: #e0e0e0;
-    --text-secondary: #888;
-    --text-white: #fff;
-    --border-color: #3d3d3d;
-    --accent-color: #4CAF50;
-}
-
-body.light-theme {
-    --bg-primary: #f5f5f5;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #e0e0e0;
-    --bg-hover: #d0d0d0;
-    --text-primary: #333;
-    --text-secondary: #666;
-    --text-white: #000;
-    --border-color: #ddd;
-    --accent-color: #4CAF50;
-}
-
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    background: #1a1a1a;
+    color: #e0e0e0;
     height: 100vh;
     overflow: hidden;
 }
@@ -42,7 +18,7 @@ body {
     align-items: center;
     justify-content: center;
     height: 100vh;
-    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
     padding: 20px;
 }
 
@@ -50,20 +26,35 @@ body {
     text-align: center;
     max-width: 400px;
     width: 100%;
-    background: var(--bg-secondary);
+    background: #2d2d2d;
     padding: 40px 30px;
     border-radius: 20px;
-    border: 1px solid var(--border-color);
+    border: 1px solid #3d3d3d;
+}
+
+.install-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
 }
 
 .install-container h1 {
-    color: var(--text-white);
+    color: #fff;
     font-size: 2rem;
     margin-bottom: 15px;
 }
 
 .install-container p {
-    color: var(--text-secondary);
+    color: #888;
     margin-bottom: 30px;
     line-height: 1.5;
 }
@@ -71,7 +62,7 @@ body {
 .install-btn {
     width: 100%;
     padding: 15px;
-    background: var(--accent-color);
+    background: #4CAF50;
     color: white;
     border: none;
     border-radius: 10px;
@@ -90,14 +81,14 @@ body {
 
 .install-info {
     text-align: left;
-    background: var(--bg-primary);
+    background: #1a1a1a;
     padding: 20px;
     border-radius: 10px;
 }
 
 .install-info p {
     margin-bottom: 10px;
-    color: var(--text-primary);
+    color: #e0e0e0;
 }
 
 .install-info p:last-child {
@@ -113,8 +104,8 @@ body {
 /* Боковое меню */
 .sidebar {
     width: 300px;
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border-color);
+    background: #2d2d2d;
+    border-right: 1px solid #3d3d3d;
     display: flex;
     flex-direction: column;
     transition: transform 0.3s ease;
@@ -124,20 +115,20 @@ body {
 
 .sidebar-header {
     padding: 20px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid #3d3d3d;
 }
 
 .sidebar-header h2 {
     font-size: 1.2rem;
     margin-bottom: 15px;
-    color: var(--text-white);
+    color: #fff;
 }
 
 .add-theme-btn {
     width: 100%;
     padding: 12px;
-    background: var(--bg-hover);
-    color: var(--text-white);
+    background: #4a4a4a;
+    color: #fff;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -146,7 +137,7 @@ body {
 }
 
 .add-theme-btn:hover {
-    background: var(--bg-tertiary);
+    background: #5a5a5a;
 }
 
 .theme-list {
@@ -157,12 +148,12 @@ body {
 
 .theme-section-header {
     padding: 10px 15px;
-    color: var(--text-secondary);
+    color: #888;
     font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-top: 10px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid #3d3d3d;
 }
 
 .theme-item {
@@ -173,7 +164,7 @@ body {
     border-radius: 8px;
     cursor: pointer;
     text-align: left;
-    color: var(--text-primary);
+    color: #e0e0e0;
     font-size: 0.95rem;
     transition: all 0.2s;
     display: flex;
@@ -183,12 +174,12 @@ body {
 }
 
 .theme-item:hover {
-    background: var(--bg-tertiary);
+    background: #3d3d3d;
 }
 
 .theme-item.active {
-    background: var(--bg-hover);
-    color: var(--text-white);
+    background: #4a4a4a;
+    color: #fff;
 }
 
 .theme-item .delete-theme {
@@ -206,21 +197,28 @@ body {
 }
 
 .theme-item.system-theme {
-    background: transparent;
+    background: #2d2d2d;
+    border-left: 3px solid #4CAF50;
 }
 
 .theme-item.system-theme:hover {
-    background: var(--bg-tertiary);
+    background: #3d3d3d;
 }
 
 .theme-item.system-theme.active {
-    background: var(--bg-hover);
+    background: #4a4a4a;
+    border-left: 3px solid #4CAF50;
+}
+
+.lock-icon {
+    margin-right: 8px;
+    font-size: 0.9rem;
 }
 
 .empty-message {
     padding: 20px;
     text-align: center;
-    color: var(--text-secondary);
+    color: #888;
 }
 
 /* Основная область */
@@ -232,8 +230,8 @@ body {
 
 .main-header {
     padding: 15px 20px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
     display: flex;
     align-items: center;
     gap: 15px;
@@ -242,41 +240,81 @@ body {
 .menu-toggle {
     background: none;
     border: none;
-    color: var(--text-white);
+    color: #fff;
     font-size: 1.5rem;
     cursor: pointer;
-    padding: 5px;
-    transition: all 0.3s;
-    min-width: 30px;
+    padding: 5px 10px;
+    transition: transform 0.3s ease;
 }
 
 .menu-toggle:hover {
-    color: var(--accent-color);
+    transform: scale(1.1);
 }
 
 .settings-btn {
     background: none;
     border: none;
-    color: var(--text-white);
+    color: #fff;
     font-size: 1.5rem;
     cursor: pointer;
-    padding: 5px;
-    transition: color 0.2s;
+    padding: 5px 10px;
+    transition: transform 0.3s ease;
 }
 
 .settings-btn:hover {
-    color: var(--accent-color);
+    transform: scale(1.1);
 }
 
 .main-header h1 {
     flex: 1;
     font-size: 1.3rem;
-    color: var(--text-white);
+    color: #fff;
+}
+
+.connection-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+    transition: all 0.3s ease;
+}
+
+.connection-indicator.online {
+    background: #4CAF50;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+.connection-indicator.medium {
+    background: #FF9800;
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+}
+
+.connection-indicator.poor {
+    background: #FF5722;
+    box-shadow: 0 0 10px rgba(255, 87, 34, 0.5);
+}
+
+.connection-indicator.offline {
+    background: #f44336;
+    box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
 }
 
 .save-btn {
     padding: 10px 20px;
-    background: var(--accent-color);
+    background: #4CAF50;
     color: white;
     border: none;
     border-radius: 6px;
@@ -290,46 +328,9 @@ body {
 }
 
 .save-btn:disabled {
-    background: var(--bg-hover);
+    background: #4a4a4a;
     cursor: not-allowed;
     opacity: 0.5;
-}
-
-/* Оффлайн индикатор */
-.offline-indicator {
-    background: #ff9800;
-    color: white;
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.9rem;
-    animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-    from {
-        transform: translateY(-100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.offline-close {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0 5px;
-    transition: opacity 0.2s;
-}
-
-.offline-close:hover {
-    opacity: 0.7;
 }
 
 .editor-area {
@@ -340,11 +341,11 @@ body {
 #noteEditor {
     width: 100%;
     height: 100%;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    background: #2d2d2d;
+    border: 1px solid #3d3d3d;
     border-radius: 8px;
     padding: 20px;
-    color: var(--text-primary);
+    color: #e0e0e0;
     font-size: 1rem;
     line-height: 1.6;
     resize: none;
@@ -352,23 +353,57 @@ body {
 }
 
 #noteEditor:focus {
-    border-color: var(--accent-color);
+    border-color: #4CAF50;
 }
 
 #noteEditor:disabled {
     opacity: 0.8;
     cursor: not-allowed;
-    background: var(--bg-primary);
+    background: #2a2a2a;
 }
 
 #noteEditor[readonly] {
     opacity: 0.8;
     cursor: default;
-    background: var(--bg-primary);
-    border-color: var(--accent-color);
+    background: #2a2a2a;
+    border-color: #4CAF50;
 }
 
-/* Модальные окна */
+/* Индикатор оффлайн режима */
+.offline-indicator {
+    background: #f44336;
+    color: white;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+.close-offline {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 5px;
+    transition: transform 0.2s;
+}
+
+.close-offline:hover {
+    transform: scale(1.2);
+}
+
+/* Модальное окно */
 .modal {
     display: none;
     position: fixed;
@@ -387,7 +422,7 @@ body {
 }
 
 .modal-content {
-    background: var(--bg-secondary);
+    background: #2d2d2d;
     padding: 25px;
     border-radius: 12px;
     width: 90%;
@@ -396,44 +431,23 @@ body {
 
 .modal-content h3 {
     margin-bottom: 20px;
-    color: var(--text-white);
+    color: #fff;
 }
 
-.modal-content input[type="text"] {
+.modal-content input {
     width: 100%;
     padding: 12px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
+    background: #1a1a1a;
+    border: 1px solid #3d3d3d;
     border-radius: 6px;
-    color: var(--text-primary);
+    color: #e0e0e0;
     margin-bottom: 20px;
     font-size: 1rem;
 }
 
-.modal-content input[type="text"]:focus {
+.modal-content input:focus {
     outline: none;
-    border-color: var(--accent-color);
-}
-
-.settings-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    padding: 10px;
-    background: var(--bg-primary);
-    border-radius: 6px;
-}
-
-.settings-option label {
-    color: var(--text-primary);
-    cursor: pointer;
-}
-
-.settings-option input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
+    border-color: #4CAF50;
 }
 
 .modal-buttons {
@@ -451,22 +465,41 @@ body {
     transition: all 0.2s;
 }
 
-#cancelAddTheme, #closeSettings {
-    background: var(--bg-hover);
-    color: var(--text-primary);
+#cancelAddTheme {
+    background: #4a4a4a;
+    color: #e0e0e0;
 }
 
-#cancelAddTheme:hover, #closeSettings:hover {
-    background: var(--bg-tertiary);
+#cancelAddTheme:hover {
+    background: #5a5a5a;
 }
 
 #confirmAddTheme {
-    background: var(--accent-color);
+    background: #4CAF50;
     color: white;
 }
 
 #confirmAddTheme:hover {
     background: #45a049;
+}
+
+/* Настройки */
+.settings-option {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.settings-option label {
+    color: #e0e0e0;
+    font-size: 1rem;
+}
+
+.settings-option input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
 }
 
 /* Адаптивный дизайн */
@@ -483,11 +516,116 @@ body {
         transform: translateX(0);
     }
     
-    .menu-toggle {
-        display: block;
-    }
-    
     .main-header h1 {
         font-size: 1rem;
     }
+    
+    .connection-indicator {
+        width: 10px;
+        height: 10px;
+    }
+}
+
+/* Светлая тема */
+body.light-theme {
+    background: #f5f5f5;
+    color: #333;
+}
+
+body.light-theme .install-screen {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+}
+
+body.light-theme .install-container {
+    background: #ffffff;
+    border: 1px solid #ddd;
+}
+
+body.light-theme .sidebar {
+    background: #ffffff;
+    border-right: 1px solid #ddd;
+}
+
+body.light-theme .main-header {
+    background: #ffffff;
+    border-bottom: 1px solid #ddd;
+}
+
+body.light-theme .main-header h1 {
+    color: #333;
+}
+
+body.light-theme .menu-toggle,
+body.light-theme .settings-btn {
+    color: #333;
+}
+
+body.light-theme .theme-item {
+    color: #333;
+}
+
+body.light-theme .theme-item:hover {
+    background: #f0f0f0;
+}
+
+body.light-theme .theme-item.active {
+    background: #e0e0e0;
+    color: #000;
+}
+
+body.light-theme .theme-item.system-theme {
+    background: #ffffff;
+    border-left: 3px solid #4CAF50;
+}
+
+body.light-theme .theme-item.system-theme:hover {
+    background: #f0f0f0;
+}
+
+body.light-theme .theme-item.system-theme.active {
+    background: #e0e0e0;
+    border-left: 3px solid #4CAF50;
+}
+
+body.light-theme #noteEditor {
+    background: #ffffff;
+    border: 1px solid #ddd;
+    color: #333;
+}
+
+body.light-theme #noteEditor:disabled,
+body.light-theme #noteEditor[readonly] {
+    background: #f5f5f5;
+}
+
+body.light-theme .modal-content {
+    background: #ffffff;
+}
+
+body.light-theme .modal-content h3 {
+    color: #333;
+}
+
+body.light-theme .modal-content input {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    color: #333;
+}
+
+body.light-theme .settings-option label {
+    color: #333;
+}
+
+body.light-theme .add-theme-btn {
+    background: #e0e0e0;
+    color: #333;
+}
+
+body.light-theme .add-theme-btn:hover {
+    background: #d0d0d0;
+}
+
+body.light-theme .theme-section-header {
+    color: #666;
+    border-bottom: 1px solid #ddd;
 }
