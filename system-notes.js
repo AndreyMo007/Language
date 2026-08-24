@@ -7,7 +7,6 @@ const SystemNotes = {
         {
             id: 'system-1',
             name: 'Основы JavaScript',
-            icon: '📘',
             isSystem: true,
             isReadOnly: true,
             content: `
@@ -72,7 +71,6 @@ const person = {
         {
             id: 'system-2',
             name: 'CSS Шпаргалка',
-            icon: '🎨',
             isSystem: true,
             isReadOnly: true,
             content: `
@@ -140,7 +138,6 @@ const person = {
         {
             id: 'system-3',
             name: 'Linux Команды',
-            icon: '🐧',
             isSystem: true,
             isReadOnly: true,
             content: `
@@ -194,7 +191,6 @@ which command
         {
             id: 'system-4',
             name: 'Git Команды',
-            icon: '🔧',
             isSystem: true,
             isReadOnly: true,
             content: `
