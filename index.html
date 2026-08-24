@@ -37,6 +37,10 @@
             <nav class="theme-list" id="themeList">
                 <!-- Темы будут добавляться сюда -->
             </nav>
+            <div class="sidebar-footer">
+                <button class="export-btn" id="exportBtn">📤 Экспорт</button>
+                <button class="import-btn" id="importBtn">📥 Импорт</button>
+            </div>
         </aside>
 
         <!-- Основная область -->
@@ -44,7 +48,9 @@
             <header class="main-header">
                 <button class="menu-toggle" id="menuToggle">☰</button>
                 <h1 id="currentThemeTitle">Выберите тему</h1>
-                <button class="save-btn" id="saveNoteBtn">💾 Сохранить</button>
+                <div class="header-actions">
+                    <button class="save-btn" id="saveNoteBtn">💾 Сохранить</button>
+                </div>
             </header>
             
             <!-- Панель инструментов для форматирования -->
@@ -56,10 +62,10 @@
                 </div>
                 
                 <div class="toolbar-group">
-                    <button onclick="window.app.formatText('bold')" title="Жирный">B</button>
-                    <button onclick="window.app.formatText('italic')" title="Курсив">I</button>
-                    <button onclick="window.app.formatText('underline')" title="Подчеркнутый">U</button>
-                    <button onclick="window.app.formatText('strike')" title="Зачеркнутый">S</button>
+                    <button onclick="window.app.formatText('bold')" title="Жирный"><b>B</b></button>
+                    <button onclick="window.app.formatText('italic')" title="Курсив"><i>I</i></button>
+                    <button onclick="window.app.formatText('underline')" title="Подчеркнутый"><u>U</u></button>
+                    <button onclick="window.app.formatText('strike')" title="Зачеркнутый"><s>S</s></button>
                 </div>
                 
                 <div class="toolbar-group">
@@ -86,7 +92,22 @@
             <div class="editor-area">
                 <textarea 
                     id="noteEditor" 
-                    
+                    placeholder="Введите ваш конспект здесь...
+
+Поддерживается форматирование:
+# Заголовок 1
+## Заголовок 2
+### Заголовок 3
+**Жирный текст**
+*Курсив*
+~~Зачеркнутый~~
+- Маркированный список
+1. Нумерованный список
+- [ ] Чекбокс
+> Цитата
+`код`
+[Ссылка](https://example.com)
+---"
                     disabled
                 ></textarea>
                 <div class="preview-area" id="previewArea" style="display: none;"></div>
@@ -105,6 +126,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Скрытый input для импорта файлов -->
+    <input type="file" id="importFileInput" accept=".json" style="display: none;">
 
     <script src="app.js"></script>
 </body>
