@@ -7,7 +7,8 @@ class NotesApp {
         this.systemThemes = SystemNotes.getAllThemes();
         this.isDarkTheme = true;
         this.isOnline = navigator.onLine;
-        this.connectionQuality = 'good'; // 'good', 'medium', 'poor', 'offline'
+        this.connectionQuality = 'good';
+        this.isSidebarOpen = false;
         
         this.initElements();
         this.loadThemePreference();
@@ -23,6 +24,7 @@ class NotesApp {
         this.app = document.getElementById('app');
         this.installBtn = document.getElementById('installBtn');
         this.sidebar = document.getElementById('sidebar');
+        this.sidebarOverlay = document.getElementById('sidebarOverlay');
         this.themeList = document.getElementById('themeList');
         this.noteEditor = document.getElementById('noteEditor');
         this.currentThemeTitle = document.getElementById('currentThemeTitle');
@@ -62,7 +64,6 @@ class NotesApp {
     }
     
     checkInstallMode() {
-        // Проверяем, запущено ли приложение как PWA
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
                           || window.navigator.standalone 
                           || document.referrer.includes('android-app://');
@@ -73,7 +74,6 @@ class NotesApp {
             this.showInstallScreen();
         }
         
-        // Слушаем изменения режима отображения
         window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
             if (e.matches) {
                 this.showApp();
@@ -90,10 +90,8 @@ class NotesApp {
         this.installScreen.style.display = 'none';
         this.app.style.display = 'flex';
         
-        // Открываем последнюю тему после показа приложения
         const lastThemeId = localStorage.getItem('notesAppLastTheme');
         if (lastThemeId) {
-            // Проверяем, не системная ли это тема
             if (SystemNotes.isSystemTheme(lastThemeId)) {
                 this.openTheme(lastThemeId);
             } else if (this.themes.find(t => t.id === lastThemeId)) {
@@ -103,17 +101,14 @@ class NotesApp {
     }
     
     attachEventListeners() {
-        // Обработка установки PWA
         this.installBtn.addEventListener('click', () => this.installPwa());
         
-        // Перехватываем событие beforeinstallprompt
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             this.deferredPrompt = e;
             this.installBtn.style.display = 'block';
         });
         
-        // Обработка успешной установки
         window.addEventListener('appinstalled', () => {
             console.log('PWA установлено');
             this.deferredPrompt = null;
@@ -129,8 +124,8 @@ class NotesApp {
         this.closeSettings.addEventListener('click', () => this.closeSettingsModal());
         this.themeToggle.addEventListener('change', () => this.toggleTheme());
         this.closeOfflineBtn.addEventListener('click', () => this.hideOfflineIndicator());
+        this.sidebarOverlay.addEventListener('click', () => this.closeSidebar());
         
-        // Закрытие модальных окон при клике вне их
         this.addThemeModal.addEventListener('click', (e) => {
             if (e.target === this.addThemeModal) {
                 this.closeAddThemeModal();
@@ -143,34 +138,50 @@ class NotesApp {
             }
         });
         
-        // Автосохранение при вводе
         this.noteEditor.addEventListener('input', () => {
             this.startAutoSave();
         });
         
-        // Обработка Enter в модальном окне
         this.newThemeName.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.addNewTheme();
             }
         });
         
-        // Сохранение перед закрытием
         window.addEventListener('beforeunload', () => {
             this.saveCurrentNote();
         });
         
-        // Обработка изменения размера окна
-        window.addEventListener('resize', () => {
-            if (window.innerWidth > 768) {
-                this.sidebar.classList.remove('open');
-                this.updateMenuIcon();
-            }
+        // Обработка свайпов для мобильных
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            this.handleSwipe(touchStartX, touchEndX);
         });
     }
     
+    handleSwipe(startX, endX) {
+        const swipeDistance = endX - startX;
+        const threshold = 100; // минимальная дистанция свайпа
+        
+        if (Math.abs(swipeDistance) > threshold) {
+            if (swipeDistance > 0 && startX < 50) {
+                // Свайп вправо от левого края - открываем меню
+                this.openSidebar();
+            } else if (swipeDistance < 0 && this.isSidebarOpen) {
+                // Свайп влево - закрываем меню
+                this.closeSidebar();
+            }
+        }
+    }
+    
     initConnectionMonitoring() {
-        // Слушаем изменения онлайн/офлайн статуса
         window.addEventListener('online', () => {
             this.isOnline = true;
             this.checkConnectionQuality();
@@ -183,14 +194,12 @@ class NotesApp {
             this.showOfflineIndicator();
         });
         
-        // Периодически проверяем качество соединения
         setInterval(() => {
             if (this.isOnline) {
                 this.checkConnectionQuality();
             }
         }, 30000);
         
-        // Начальная проверка
         this.updateConnectionIndicator();
     }
     
@@ -202,7 +211,6 @@ class NotesApp {
             return;
         }
         
-        // Проверяем качество соединения
         const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         
         if (connection) {
@@ -216,7 +224,6 @@ class NotesApp {
                 this.connectionQuality = 'good';
             }
         } else {
-            // Если API не поддерживается, проверяем через fetch
             this.testConnectionSpeed();
             return;
         }
@@ -300,7 +307,6 @@ class NotesApp {
             console.log('Результат установки:', result.outcome);
             this.deferredPrompt = null;
         } else {
-            // Fallback для iOS
             alert('Нажмите кнопку "Поделиться" и выберите "На экран «Домой»"');
         }
     }
@@ -320,7 +326,6 @@ class NotesApp {
     renderThemes() {
         this.themeList.innerHTML = '';
         
-        // Сначала показываем системные темы
         if (this.systemThemes.length > 0) {
             const systemHeader = document.createElement('div');
             systemHeader.className = 'theme-section-header';
@@ -332,7 +337,6 @@ class NotesApp {
             });
         }
         
-        // Затем пользовательские темы
         const userHeader = document.createElement('div');
         userHeader.className = 'theme-section-header';
         userHeader.textContent = 'Заметки';
@@ -356,9 +360,6 @@ class NotesApp {
         if (theme.id === this.currentThemeId) {
             themeItem.classList.add('active');
         }
-        if (isSystem) {
-            themeItem.classList.add('system-theme');
-        }
         
         const themeName = document.createElement('span');
         themeName.textContent = theme.name;
@@ -377,7 +378,12 @@ class NotesApp {
             themeItem.appendChild(themeName);
         }
         
-        themeItem.onclick = () => this.openTheme(theme.id);
+        themeItem.onclick = () => {
+            this.openTheme(theme.id);
+            if (window.innerWidth <= 768) {
+                this.closeSidebar();
+            }
+        };
         
         this.themeList.appendChild(themeItem);
     }
@@ -426,7 +432,6 @@ class NotesApp {
     }
     
     deleteTheme(themeId) {
-        // Проверяем, не системная ли это тема
         if (SystemNotes.isSystemTheme(themeId)) {
             alert('Системные конспекты нельзя удалить');
             return;
@@ -453,7 +458,6 @@ class NotesApp {
     }
     
     openTheme(themeId) {
-        // Проверяем, не системная ли это тема
         const systemTheme = SystemNotes.getThemeById(themeId);
         
         if (systemTheme) {
@@ -468,16 +472,9 @@ class NotesApp {
             
             localStorage.setItem('notesAppLastTheme', themeId);
             this.renderThemes();
-            
-            // Закрываем боковое меню на мобильных
-            if (window.innerWidth <= 768) {
-                this.sidebar.classList.remove('open');
-                this.updateMenuIcon();
-            }
             return;
         }
         
-        // Обычная пользовательская тема
         const theme = this.themes.find(t => t.id === themeId);
         if (!theme) return;
         
@@ -493,18 +490,11 @@ class NotesApp {
         
         localStorage.setItem('notesAppLastTheme', themeId);
         this.renderThemes();
-        
-        // Закрываем боковое меню на мобильных
-        if (window.innerWidth <= 768) {
-            this.sidebar.classList.remove('open');
-            this.updateMenuIcon();
-        }
     }
     
     saveCurrentNote() {
         if (!this.currentThemeId) return;
         
-        // Проверяем, не системная ли это тема
         if (SystemNotes.isSystemTheme(this.currentThemeId)) {
             return;
         }
@@ -532,16 +522,23 @@ class NotesApp {
     }
     
     toggleSidebar() {
-        this.sidebar.classList.toggle('open');
-        this.updateMenuIcon();
+        if (this.isSidebarOpen) {
+            this.closeSidebar();
+        } else {
+            this.openSidebar();
+        }
     }
     
-    updateMenuIcon() {
-        if (this.sidebar.classList.contains('open')) {
-            this.menuToggle.textContent = '❯';
-        } else {
-            this.menuToggle.textContent = '❮';
-        }
+    openSidebar() {
+        this.sidebar.classList.add('open');
+        this.sidebarOverlay.classList.add('active');
+        this.isSidebarOpen = true;
+    }
+    
+    closeSidebar() {
+        this.sidebar.classList.remove('open');
+        this.sidebarOverlay.classList.remove('active');
+        this.isSidebarOpen = false;
     }
     
     initServiceWorker() {
@@ -559,7 +556,6 @@ class NotesApp {
     }
 }
 
-// Инициализация приложения
 document.addEventListener('DOMContentLoaded', () => {
     const app = new NotesApp();
     window.app = app;
