@@ -22,6 +22,7 @@
                 <p>✓ Работает оффлайн</p>
                 <p>✓ Данные хранятся локально</p>
                 <p>✓ Быстрый доступ</p>
+                <p>✓ Системные конспекты включены</p>
             </div>
         </div>
     </div>
@@ -31,16 +32,12 @@
         <!-- Боковое меню -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2>📚 Мои темы</h2>
+                <h2>Мои темы</h2>
                 <button class="add-theme-btn" id="addThemeBtn">+ Новая тема</button>
             </div>
             <nav class="theme-list" id="themeList">
                 <!-- Темы будут добавляться сюда -->
             </nav>
-            <div class="sidebar-footer">
-                <button class="export-btn" id="exportBtn">📤 Экспорт</button>
-                <button class="import-btn" id="importBtn">📥 Импорт</button>
-            </div>
         </aside>
 
         <!-- Основная область -->
@@ -48,54 +45,15 @@
             <header class="main-header">
                 <button class="menu-toggle" id="menuToggle">☰</button>
                 <h1 id="currentThemeTitle">Выберите тему</h1>
-                <div class="header-actions">
-                    <button class="save-btn" id="saveNoteBtn">💾 Сохранить</button>
-                </div>
+                <button class="save-btn" id="saveNoteBtn">💾 Сохранить</button>
             </header>
             
-            <!-- Панель инструментов для форматирования -->
-            <div class="toolbar" id="toolbar">
-                <div class="toolbar-group">
-                    <button onclick="window.app.formatText('h1')" title="Заголовок 1">H1</button>
-                    <button onclick="window.app.formatText('h2')" title="Заголовок 2">H2</button>
-                    <button onclick="window.app.formatText('h3')" title="Заголовок 3">H3</button>
-                </div>
-                
-                <div class="toolbar-group">
-                    <button onclick="window.app.formatText('bold')" title="Жирный"><b>B</b></button>
-                    <button onclick="window.app.formatText('italic')" title="Курсив"><i>I</i></button>
-                    <button onclick="window.app.formatText('underline')" title="Подчеркнутый"><u>U</u></button>
-                    <button onclick="window.app.formatText('strike')" title="Зачеркнутый"><s>S</s></button>
-                </div>
-                
-                <div class="toolbar-group">
-                    <button onclick="window.app.formatText('list')" title="Маркированный список">•</button>
-                    <button onclick="window.app.formatText('numbered-list')" title="Нумерованный список">1.</button>
-                    <button onclick="window.app.formatText('checkbox')" title="Чекбокс">☑</button>
-                </div>
-                
-                <div class="toolbar-group">
-                    <button onclick="window.app.formatText('quote')" title="Цитата">❝</button>
-                    <button onclick="window.app.formatText('code')" title="Код">&lt;/&gt;</button>
-                    <button onclick="window.app.formatText('link')" title="Ссылка">🔗</button>
-                    <button onclick="window.app.formatText('hr')" title="Горизонтальная линия">—</button>
-                </div>
-            </div>
-            
-            <!-- Вкладки редактора -->
-            <div class="editor-tabs">
-                <button class="tab-btn active" onclick="window.app.switchTab('write')">✏️ Редактор</button>
-                <button class="tab-btn" onclick="window.app.switchTab('preview')">👁️ Просмотр</button>
-            </div>
-            
-            <!-- Область редактора -->
             <div class="editor-area">
                 <textarea 
                     id="noteEditor" 
-                    
+                    placeholder="Введите ваш конспект здесь..."
                     disabled
                 ></textarea>
-                <div class="preview-area" id="previewArea" style="display: none;"></div>
             </div>
         </main>
     </div>
@@ -112,9 +70,7 @@
         </div>
     </div>
 
-    <!-- Скрытый input для импорта файлов -->
-    <input type="file" id="importFileInput" accept=".json" style="display: none;">
-
+    <script src="system-notes.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
