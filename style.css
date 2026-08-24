@@ -32,21 +32,6 @@ body {
     border: 1px solid #3d3d3d;
 }
 
-.install-icon {
-    font-size: 80px;
-    margin-bottom: 20px;
-    animation: bounce 2s infinite;
-}
-
-@keyframes bounce {
-    0%, 100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-20px);
-    }
-}
-
 .install-container h1 {
     color: #fff;
     font-size: 2rem;
@@ -99,6 +84,23 @@ body {
 .app {
     display: flex;
     height: 100vh;
+    position: relative;
+}
+
+/* Затемнение для мобильного меню */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+}
+
+.sidebar-overlay.active {
+    display: block;
 }
 
 /* Боковое меню */
@@ -196,25 +198,6 @@ body {
     display: inline;
 }
 
-.theme-item.system-theme {
-    background: #2d2d2d;
-    border-left: 3px solid #4CAF50;
-}
-
-.theme-item.system-theme:hover {
-    background: #3d3d3d;
-}
-
-.theme-item.system-theme.active {
-    background: #4a4a4a;
-    border-left: 3px solid #4CAF50;
-}
-
-.lock-icon {
-    margin-right: 8px;
-    font-size: 0.9rem;
-}
-
 .empty-message {
     padding: 20px;
     text-align: center;
@@ -226,6 +209,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 .main-header {
@@ -234,7 +218,7 @@ body {
     border-bottom: 1px solid #3d3d3d;
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
 }
 
 .menu-toggle {
@@ -251,65 +235,37 @@ body {
     transform: scale(1.1);
 }
 
-.settings-btn {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 5px 10px;
-    transition: transform 0.3s ease;
-}
-
-.settings-btn:hover {
-    transform: scale(1.1);
-}
-
 .main-header h1 {
     flex: 1;
     font-size: 1.3rem;
     color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .connection-indicator {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    margin-right: 5px;
+    flex-shrink: 0;
     transition: all 0.3s ease;
 }
 
 .connection-indicator.online {
     background: #4CAF50;
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
 }
 
 .connection-indicator.medium {
     background: #FF9800;
-    box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
 }
 
 .connection-indicator.poor {
     background: #FF5722;
-    box-shadow: 0 0 10px rgba(255, 87, 34, 0.5);
 }
 
 .connection-indicator.offline {
     background: #f44336;
-    box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.5;
-    }
-    100% {
-        opacity: 1;
-    }
 }
 
 .save-btn {
@@ -321,6 +277,7 @@ body {
     cursor: pointer;
     font-size: 0.95rem;
     transition: background 0.2s;
+    white-space: nowrap;
 }
 
 .save-btn:hover {
@@ -331,6 +288,20 @@ body {
     background: #4a4a4a;
     cursor: not-allowed;
     opacity: 0.5;
+}
+
+.settings-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+    transition: transform 0.3s ease;
+}
+
+.settings-btn:hover {
+    transform: scale(1.1);
 }
 
 .editor-area {
@@ -502,7 +473,7 @@ body {
     cursor: pointer;
 }
 
-/* Адаптивный дизайн */
+/* Адаптивный дизайн для мобильных */
 @media (max-width: 768px) {
     .sidebar {
         position: fixed;
@@ -510,10 +481,16 @@ body {
         top: 0;
         height: 100vh;
         transform: translateX(-100%);
+        width: 280px;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
     }
     
     .sidebar.open {
         transform: translateX(0);
+    }
+    
+    .main-header {
+        padding: 10px 15px;
     }
     
     .main-header h1 {
@@ -523,6 +500,24 @@ body {
     .connection-indicator {
         width: 10px;
         height: 10px;
+    }
+    
+    .save-btn {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+    }
+    
+    .settings-btn {
+        font-size: 1rem;
+    }
+    
+    .editor-area {
+        padding: 10px;
+    }
+    
+    #noteEditor {
+        padding: 15px;
+        font-size: 0.95rem;
     }
 }
 
@@ -571,20 +566,6 @@ body.light-theme .theme-item:hover {
 body.light-theme .theme-item.active {
     background: #e0e0e0;
     color: #000;
-}
-
-body.light-theme .theme-item.system-theme {
-    background: #ffffff;
-    border-left: 3px solid #4CAF50;
-}
-
-body.light-theme .theme-item.system-theme:hover {
-    background: #f0f0f0;
-}
-
-body.light-theme .theme-item.system-theme.active {
-    background: #e0e0e0;
-    border-left: 3px solid #4CAF50;
 }
 
 body.light-theme #noteEditor {
