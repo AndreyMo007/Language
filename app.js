@@ -29,19 +29,287 @@ class NotesApp {
         this.confirmAddTheme = document.getElementById('confirmAddTheme');
         this.previewArea = document.getElementById('previewArea');
         this.toolbar = document.getElementById('toolbar');
+        this.exportBtn = document.getElementById('exportBtn');
+        this.importBtn = document.getElementById('importBtn');
+        this.importFileInput = document.getElementById('importFileInput');
     }
     
-    // ... (остальные методы из вашего кода остаются без изменений)
+    checkInstallMode() {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+                          || window.navigator.standalone 
+                          || document.referrer.includes('android-app://');
+        
+        if (isStandalone) {
+            this.showApp();
+        } else {
+            this.showInstallScreen();
+        }
+        
+        window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
+            if (e.matches) {
+                this.showApp();
+            }
+        });
+    }
     
-    // Функция форматирования текста
+    showInstallScreen() {
+        this.installScreen.style.display = 'flex';
+        this.app.style.display = 'none';
+    }
+    
+    showApp() {
+        this.installScreen.style.display = 'none';
+        this.app.style.display = 'flex';
+        
+        if (this.themes.length > 0) {
+            const lastThemeId = localStorage.getItem('notesAppLastTheme');
+            if (lastThemeId && this.themes.find(t => t.id === lastThemeId)) {
+                this.openTheme(lastThemeId);
+            }
+        }
+    }
+    
+    attachEventListeners() {
+        this.installBtn.addEventListener('click', () => this.installPwa());
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            this.deferredPrompt = e;
+            this.installBtn.style.display = 'block';
+        });
+        
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA установлено');
+            this.deferredPrompt = null;
+            this.showApp();
+        });
+        
+        this.addThemeBtn.addEventListener('click', () => this.openAddThemeModal());
+        this.cancelAddTheme.addEventListener('click', () => this.closeAddThemeModal());
+        this.confirmAddTheme.addEventListener('click', () => this.addNewTheme());
+        this.saveNoteBtn.addEventListener('click', () => this.saveCurrentNote());
+        this.menuToggle.addEventListener('click', () => this.toggleSidebar());
+        this.exportBtn.addEventListener('click', () => this.exportAllNotes());
+        this.importBtn.addEventListener('click', () => this.importFileInput.click());
+        this.importFileInput.addEventListener('change', (e) => this.importNotes(e));
+        
+        this.addThemeModal.addEventListener('click', (e) => {
+            if (e.target === this.addThemeModal) {
+                this.closeAddThemeModal();
+            }
+        });
+        
+        this.noteEditor.addEventListener('input', () => {
+            this.startAutoSave();
+        });
+        
+        this.newThemeName.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.addNewTheme();
+            }
+        });
+        
+        // Горячие клавиши
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key.toLowerCase()) {
+                    case 's':
+                        e.preventDefault();
+                        this.saveCurrentNote();
+                        break;
+                    case 'b':
+                        e.preventDefault();
+                        this.formatText('bold');
+                        break;
+                    case 'i':
+                        e.preventDefault();
+                        this.formatText('italic');
+                        break;
+                }
+            }
+        });
+        
+        window.addEventListener('beforeunload', () => {
+            this.saveCurrentNote();
+        });
+    }
+    
+    async installPwa() {
+        if (this.deferredPrompt) {
+            this.deferredPrompt.prompt();
+            const result = await this.deferredPrompt.userChoice;
+            console.log('Результат установки:', result.outcome);
+            this.deferredPrompt = null;
+        } else {
+            alert('Нажмите кнопку "Поделиться" и выберите "На экран «Домой»"');
+        }
+    }
+    
+    loadThemes() {
+        const savedThemes = localStorage.getItem('notesAppThemes');
+        if (savedThemes) {
+            this.themes = JSON.parse(savedThemes);
+            this.renderThemes();
+        }
+    }
+    
+    saveThemes() {
+        localStorage.setItem('notesAppThemes', JSON.stringify(this.themes));
+    }
+    
+    renderThemes() {
+        this.themeList.innerHTML = '';
+        
+        if (this.themes.length === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'empty-message';
+            emptyMessage.textContent = 'Создайте первую тему';
+            this.themeList.appendChild(emptyMessage);
+            return;
+        }
+        
+        this.themes.forEach(theme => {
+            const themeItem = document.createElement('div');
+            themeItem.className = 'theme-item';
+            if (theme.id === this.currentThemeId) {
+                themeItem.classList.add('active');
+            }
+            
+            const themeName = document.createElement('span');
+            themeName.textContent = theme.name;
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-theme';
+            deleteBtn.textContent = '×';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.deleteTheme(theme.id);
+            };
+            
+            themeItem.appendChild(themeName);
+            themeItem.appendChild(deleteBtn);
+            themeItem.onclick = () => this.openTheme(theme.id);
+            
+            this.themeList.appendChild(themeItem);
+        });
+    }
+    
+    openAddThemeModal() {
+        this.addThemeModal.classList.add('active');
+        this.newThemeName.value = '';
+        this.newThemeName.focus();
+    }
+    
+    closeAddThemeModal() {
+        this.addThemeModal.classList.remove('active');
+    }
+    
+    addNewTheme() {
+        const themeName = this.newThemeName.value.trim();
+        if (!themeName) {
+            this.showNotification('Введите название темы', 'error');
+            return;
+        }
+        
+        const newTheme = {
+            id: Date.now().toString(),
+            name: themeName,
+            content: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        this.themes.push(newTheme);
+        this.saveThemes();
+        this.renderThemes();
+        this.openTheme(newTheme.id);
+        this.closeAddThemeModal();
+        this.showNotification('Тема создана');
+    }
+    
+    deleteTheme(themeId) {
+        if (!confirm('Удалить эту тему и все её конспекты?')) {
+            return;
+        }
+        
+        this.themes = this.themes.filter(t => t.id !== themeId);
+        this.saveThemes();
+        
+        if (this.currentThemeId === themeId) {
+            this.currentThemeId = null;
+            this.noteEditor.value = '';
+            this.noteEditor.disabled = true;
+            this.currentThemeTitle.textContent = 'Выберите тему';
+            localStorage.removeItem('notesAppLastTheme');
+        }
+        
+        this.renderThemes();
+        this.showNotification('Тема удалена', 'error');
+    }
+    
+    openTheme(themeId) {
+        const theme = this.themes.find(t => t.id === themeId);
+        if (!theme) return;
+        
+        this.saveCurrentNote();
+        
+        this.currentThemeId = themeId;
+        this.currentThemeTitle.textContent = theme.name;
+        this.noteEditor.value = theme.content || '';
+        this.noteEditor.disabled = false;
+        this.noteEditor.focus();
+        
+        localStorage.setItem('notesAppLastTheme', themeId);
+        this.renderThemes();
+        
+        if (window.innerWidth <= 768) {
+            this.sidebar.classList.remove('open');
+        }
+    }
+    
+    saveCurrentNote() {
+        if (!this.currentThemeId) return;
+        
+        const theme = this.themes.find(t => t.id === this.currentThemeId);
+        if (theme) {
+            theme.content = this.noteEditor.value;
+            theme.updatedAt = new Date().toISOString();
+            this.saveThemes();
+            this.showSaveIndicator();
+        }
+    }
+    
+    startAutoSave() {
+        clearTimeout(this.autoSaveTimer);
+        this.autoSaveTimer = setTimeout(() => {
+            this.saveCurrentNote();
+        }, 1000);
+    }
+    
+    showSaveIndicator() {
+        this.saveNoteBtn.textContent = '✓ Сохранено';
+        setTimeout(() => {
+            this.saveNoteBtn.textContent = '💾 Сохранить';
+        }, 2000);
+    }
+    
+    toggleSidebar() {
+        this.sidebar.classList.toggle('open');
+    }
+    
+    // Форматирование текста
     formatText(type) {
+        if (!this.currentThemeId) {
+            this.showNotification('Выберите тему', 'error');
+            return;
+        }
+        
         const editor = this.noteEditor;
         const start = editor.selectionStart;
         const end = editor.selectionEnd;
         const selectedText = editor.value.substring(start, end);
         
         let formattedText = '';
-        let newCursorPos = start;
         
         switch(type) {
             case 'h1':
@@ -101,7 +369,6 @@ class NotesApp {
         this.startAutoSave();
     }
     
-    // Вспомогательная функция для форматирования списков
     formatList(text, numbered) {
         const lines = text.split('\n');
         return lines.map((line, index) => {
@@ -130,13 +397,11 @@ class NotesApp {
         }
     }
     
-    // Рендеринг предпросмотра
     renderPreview() {
         const markdown = this.noteEditor.value;
         this.previewArea.innerHTML = this.markdownToHtml(markdown);
     }
     
-    // Конвертация Markdown в HTML
     markdownToHtml(markdown) {
         let html = markdown;
         
@@ -171,73 +436,3 @@ class NotesApp {
         // Цитаты
         html = html.replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>');
         
-        // Код
-        html = html.replace(/`(.*?)`/g, '<code>$1</code>');
-        
-        // Ссылки
-        html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
-        
-        // Изображения
-        html = html.replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1">');
-        
-        // Горизонтальная линия
-        html = html.replace(/^---$/gm, '<hr>');
-        
-        // Подчеркивание
-        html = html.replace(/<u>(.*?)<\/u>/g, '<u>$1</u>');
-        
-        // Переносы строк
-        html = html.replace(/\n\n/g, '</p><p>');
-        html = html.replace(/\n/g, '<br>');
-        
-        // Оборачивание в параграфы
-        html = `<div class="markdown-content">${html}</div>`;
-        
-        return html;
-    }
-    
-    // Показать уведомление
-    showNotification(message) {
-        const notification = document.createElement('div');
-        notification.className = 'notification';
-        notification.textContent = message;
-        notification.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #4CAF50;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            animation: slideIn 0.3s ease;
-            z-index: 2000;
-        `;
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => notification.remove(), 300);
-        }, 2000);
-    }
-}
-
-// Добавьте анимации в style.css
-const styleSheet = document.createElement("style");
-styleSheet.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-`;
-document.head.appendChild(styleSheet);
-
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', () => {
-    const app = new NotesApp();
-    window.app = app;
-});
