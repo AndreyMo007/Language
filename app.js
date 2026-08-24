@@ -36,30 +36,26 @@ class NotesApp {
         this.confirmAddTheme = document.getElementById('confirmAddTheme');
         this.closeSettings = document.getElementById('closeSettings');
         this.themeToggle = document.getElementById('themeToggle');
+        this.offlineIndicator = document.getElementById('offlineIndicator');
     }
     
     initOnlineStatus() {
-        // Слушаем изменения онлайн/оффлайн статуса
-        window.addEventListener('online', () => {
-            this.isOnline = true;
-            this.showOnlineStatus();
-        });
+        // Функция для обновления индикатора
+        const updateOnlineStatus = () => {
+            this.isOnline = navigator.onLine;
+            if (!this.isOnline && this.offlineIndicator) {
+                this.offlineIndicator.style.display = 'block';
+            } else if (this.offlineIndicator) {
+                this.offlineIndicator.style.display = 'none';
+            }
+        };
         
-        window.addEventListener('offline', () => {
-            this.isOnline = false;
-            this.showOnlineStatus();
-        });
+        // Слушаем изменения онлайн/оффлайн статуса
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
         
         // Показываем начальный статус
-        this.showOnlineStatus();
-    }
-    
-    showOnlineStatus() {
-        // Можно добавить индикатор статуса в интерфейс
-        if (!this.isOnline) {
-            console.log('Приложение работает в оффлайн-режиме');
-            // Все данные сохраняются локально и доступны
-        }
+        updateOnlineStatus();
     }
     
     loadThemePreference() {
@@ -144,7 +140,6 @@ class NotesApp {
         this.cancelAddTheme.addEventListener('click', () => this.closeAddThemeModal());
         this.confirmAddTheme.addEventListener('click', () => this.addNewTheme());
         this.saveNoteBtn.addEventListener('click', () => this.saveCurrentNote());
-        this.menuToggle.addEventListener('click', () => this.toggleSidebar());
         this.settingsBtn.addEventListener('click', () => this.openSettingsModal());
         this.closeSettings.addEventListener('click', () => this.closeSettingsModal());
         this.themeToggle.addEventListener('change', () => this.toggleTheme());
