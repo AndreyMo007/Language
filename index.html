@@ -35,7 +35,14 @@
         <!-- Боковое меню -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2>Заметки</h2>
+                <div class="sidebar-header-top">
+                    <h2>Заметки</h2>
+                    <button class="settings-icon-btn" id="settingsBtn" title="Настройки">
+                        <span class="menu-icon-line"></span>
+                        <span class="menu-icon-line"></span>
+                        <span class="menu-icon-line"></span>
+                    </button>
+                </div>
                 <button class="add-theme-btn" id="addThemeBtn">Новая заметка</button>
             </div>
             <nav class="theme-list" id="themeList">
@@ -50,7 +57,6 @@
                 <h1 id="currentThemeTitle">Выберите тему</h1>
                 <div class="connection-indicator" id="connectionIndicator" title="Статус подключения"></div>
                 <button class="save-btn" id="saveNoteBtn">Сохранить</button>
-                <button class="settings-btn" id="settingsBtn">⚙️</button>
             </header>
             
             <div class="offline-indicator" id="offlineIndicator" style="display: none;">
