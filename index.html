@@ -37,16 +37,9 @@
             <div class="sidebar-header">
                 <div class="sidebar-header-top">
                     <h2>Заметки</h2>
-                    <div class="sidebar-header-buttons">
-                        <button class="settings-icon-btn" id="settingsBtn" title="Настройки">
-                            <span class="menu-icon-line"></span>
-                            <span class="menu-icon-line"></span>
-                            <span class="menu-icon-line"></span>
-                        </button>
-                        <button class="collapse-btn" id="collapseBtn" title="Свернуть меню">
-                            <span class="collapse-icon">◀</span>
-                        </button>
-                    </div>
+                    <button class="collapse-btn" id="collapseBtn" title="Свернуть меню">
+                        <span class="collapse-icon">◀</span>
+                    </button>
                 </div>
                 <button class="add-theme-btn" id="addThemeBtn">Новая заметка</button>
             </div>
@@ -62,6 +55,11 @@
                 <h1 id="currentThemeTitle">Выберите тему</h1>
                 <div class="connection-indicator" id="connectionIndicator" title="Статус подключения"></div>
                 <button class="save-btn" id="saveNoteBtn">Сохранить</button>
+                <button class="settings-icon-btn" id="settingsBtn" title="Настройки">
+                    <span class="menu-icon-line"></span>
+                    <span class="menu-icon-line"></span>
+                    <span class="menu-icon-line"></span>
+                </button>
             </header>
             
             <div class="offline-indicator" id="offlineIndicator" style="display: none;">
@@ -75,6 +73,19 @@
                     placeholder="Введите вашу заметку здесь..."
                     disabled
                 ></textarea>
+                
+                <!-- Настройки на месте редактора -->
+                <div class="settings-panel" id="settingsPanel" style="display: none;">
+                    <div class="settings-header">
+                        <h3>Настройки</h3>
+                    </div>
+                    <div class="settings-content">
+                        <div class="settings-option">
+                            <label for="themeToggle">Темная тема</label>
+                            <input type="checkbox" id="themeToggle">
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -87,20 +98,6 @@
             <div class="modal-buttons">
                 <button id="cancelAddTheme">Отмена</button>
                 <button id="confirmAddTheme">Создать</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно настроек -->
-    <div class="modal" id="settingsModal">
-        <div class="modal-content">
-            <h3>Настройки</h3>
-            <div class="settings-option">
-                <label for="themeToggle">Темная тема</label>
-                <input type="checkbox" id="themeToggle">
-            </div>
-            <div class="modal-buttons">
-                <button id="closeSettings">Закрыть</button>
             </div>
         </div>
     </div>
