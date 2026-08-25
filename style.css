@@ -147,8 +147,8 @@ body {
     margin: 0;
 }
 
-/* Кнопка сворачивания меню */
-.collapse-btn {
+/* Кнопки стрелок */
+.collapse-btn, .expand-btn {
     background: none;
     border: none;
     cursor: pointer;
@@ -159,30 +159,22 @@ body {
     transition: transform 0.3s ease;
 }
 
-.collapse-btn:hover {
+.collapse-btn:hover, .expand-btn:hover {
     transform: scale(1.2);
 }
 
 .arrow-icon {
-    width: 20px;
-    height: 20px;
+    width: 30px;
+    height: 30px;
     transition: transform 0.3s ease;
 }
 
-.arrow-left {
-    transform: rotate(90deg);
+.collapse-arrow {
+    transform: rotate(90deg); /* Стрелка влево */
 }
 
-.arrow-right {
-    transform: rotate(-90deg);
-}
-
-.arrow-down {
-    transform: rotate(0deg);
-}
-
-.arrow-up {
-    transform: rotate(180deg);
+.expand-arrow {
+    transform: rotate(-90deg); /* Стрелка вправо */
 }
 
 .add-theme-btn {
@@ -256,18 +248,18 @@ body {
 }
 
 .section-arrow {
-    width: 12px;
-    height: 12px;
+    width: 20px;
+    height: 20px;
     transition: transform 0.3s ease;
     opacity: 0.7;
 }
 
 .section-arrow.down {
-    transform: rotate(0deg);
+    transform: rotate(0deg); /* Стрелка вниз */
 }
 
-.section-arrow.right {
-    transform: rotate(-90deg);
+.section-arrow.up {
+    transform: rotate(180deg); /* Стрелка вверх */
 }
 
 .theme-item {
@@ -664,6 +656,11 @@ body {
     #noteEditor {
         padding: 15px;
         font-size: 0.95rem;
+    }
+    
+    .arrow-icon {
+        width: 25px;
+        height: 25px;
     }
 }
 
