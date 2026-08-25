@@ -10,6 +10,7 @@ class NotesApp {
         this.connectionQuality = 'good';
         this.isSidebarOpen = false;
         this.isSidebarCollapsed = false;
+        this.isSettingsOpen = false;
         
         this.initElements();
         this.loadThemePreference();
@@ -36,11 +37,10 @@ class NotesApp {
         this.collapseBtn = document.getElementById('collapseBtn');
         this.collapseIcon = document.querySelector('.collapse-icon');
         this.addThemeModal = document.getElementById('addThemeModal');
-        this.settingsModal = document.getElementById('settingsModal');
+        this.settingsPanel = document.getElementById('settingsPanel');
         this.newThemeName = document.getElementById('newThemeName');
         this.cancelAddTheme = document.getElementById('cancelAddTheme');
         this.confirmAddTheme = document.getElementById('confirmAddTheme');
-        this.closeSettings = document.getElementById('closeSettings');
         this.themeToggle = document.getElementById('themeToggle');
         this.offlineIndicator = document.getElementById('offlineIndicator');
         this.closeOfflineBtn = document.getElementById('closeOfflineBtn');
@@ -123,8 +123,7 @@ class NotesApp {
         this.confirmAddTheme.addEventListener('click', () => this.addNewTheme());
         this.saveNoteBtn.addEventListener('click', () => this.saveCurrentNote());
         this.menuToggle.addEventListener('click', () => this.toggleSidebar());
-        this.settingsBtn.addEventListener('click', () => this.openSettingsModal());
-        this.closeSettings.addEventListener('click', () => this.closeSettingsModal());
+        this.settingsBtn.addEventListener('click', () => this.toggleSettings());
         this.themeToggle.addEventListener('change', () => this.toggleTheme());
         this.closeOfflineBtn.addEventListener('click', () => this.hideOfflineIndicator());
         this.sidebarOverlay.addEventListener('click', () => this.closeSidebar());
@@ -133,12 +132,6 @@ class NotesApp {
         this.addThemeModal.addEventListener('click', (e) => {
             if (e.target === this.addThemeModal) {
                 this.closeAddThemeModal();
-            }
-        });
-        
-        this.settingsModal.addEventListener('click', (e) => {
-            if (e.target === this.settingsModal) {
-                this.closeSettingsModal();
             }
         });
         
@@ -170,15 +163,37 @@ class NotesApp {
         });
     }
     
+    toggleSettings() {
+        this.isSettingsOpen = !this.isSettingsOpen;
+        
+        if (this.isSettingsOpen) {
+            this.noteEditor.style.display = 'none';
+            this.settingsPanel.style.display = 'block';
+        } else {
+            this.noteEditor.style.display = 'block';
+            this.settingsPanel.style.display = 'none';
+        }
+    }
+    
     toggleCollapse() {
         this.isSidebarCollapsed = !this.isSidebarCollapsed;
         
         if (this.isSidebarCollapsed) {
             this.sidebar.classList.add('collapsed');
             this.collapseIcon.textContent = '▶';
+            // Перемещаем кнопку в main-header
+            const mainHeader = document.querySelector('.main-header');
+            const menuToggle = document.getElementById('menuToggle');
+            mainHeader.insertBefore(this.collapseBtn, menuToggle);
+            this.collapseBtn.style.display = 'flex';
         } else {
             this.sidebar.classList.remove('collapsed');
             this.collapseIcon.textContent = '◀';
+            // Возвращаем кнопку в sidebar
+            const sidebarHeaderTop = document.querySelector('.sidebar-header-top');
+            const h2 = sidebarHeaderTop.querySelector('h2');
+            sidebarHeaderTop.insertBefore(this.collapseBtn, h2.nextSibling);
+            this.collapseBtn.style.display = 'flex';
         }
         
         // Закрываем мобильное меню если оно было открыто
@@ -417,14 +432,6 @@ class NotesApp {
         this.addThemeModal.classList.remove('active');
     }
     
-    openSettingsModal() {
-        this.settingsModal.classList.add('active');
-    }
-    
-    closeSettingsModal() {
-        this.settingsModal.classList.remove('active');
-    }
-    
     toggleTheme() {
         this.isDarkTheme = this.themeToggle.checked;
         this.applyTheme();
@@ -491,6 +498,11 @@ class NotesApp {
             
             localStorage.setItem('notesAppLastTheme', themeId);
             this.renderThemes();
+            
+            // Закрываем настройки если открыты
+            if (this.isSettingsOpen) {
+                this.toggleSettings();
+            }
             return;
         }
         
@@ -509,6 +521,11 @@ class NotesApp {
         
         localStorage.setItem('notesAppLastTheme', themeId);
         this.renderThemes();
+        
+        // Закрываем настройки если открыты
+        if (this.isSettingsOpen) {
+            this.toggleSettings();
+        }
     }
     
     saveCurrentNote() {
