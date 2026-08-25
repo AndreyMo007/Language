@@ -9,6 +9,7 @@ class NotesApp {
         this.isOnline = navigator.onLine;
         this.connectionQuality = 'good';
         this.isSidebarOpen = false;
+        this.isSidebarCollapsed = false;
         
         this.initElements();
         this.loadThemePreference();
@@ -32,6 +33,8 @@ class NotesApp {
         this.saveNoteBtn = document.getElementById('saveNoteBtn');
         this.menuToggle = document.getElementById('menuToggle');
         this.settingsBtn = document.getElementById('settingsBtn');
+        this.collapseBtn = document.getElementById('collapseBtn');
+        this.collapseIcon = document.querySelector('.collapse-icon');
         this.addThemeModal = document.getElementById('addThemeModal');
         this.settingsModal = document.getElementById('settingsModal');
         this.newThemeName = document.getElementById('newThemeName');
@@ -125,6 +128,7 @@ class NotesApp {
         this.themeToggle.addEventListener('change', () => this.toggleTheme());
         this.closeOfflineBtn.addEventListener('click', () => this.hideOfflineIndicator());
         this.sidebarOverlay.addEventListener('click', () => this.closeSidebar());
+        this.collapseBtn.addEventListener('click', () => this.toggleCollapse());
         
         this.addThemeModal.addEventListener('click', (e) => {
             if (e.target === this.addThemeModal) {
@@ -164,6 +168,23 @@ class NotesApp {
             touchEndX = e.changedTouches[0].screenX;
             this.handleSwipe(touchStartX, touchEndX);
         });
+    }
+    
+    toggleCollapse() {
+        this.isSidebarCollapsed = !this.isSidebarCollapsed;
+        
+        if (this.isSidebarCollapsed) {
+            this.sidebar.classList.add('collapsed');
+            this.collapseIcon.textContent = '▶';
+        } else {
+            this.sidebar.classList.remove('collapsed');
+            this.collapseIcon.textContent = '◀';
+        }
+        
+        // Закрываем мобильное меню если оно было открыто
+        if (window.innerWidth <= 768) {
+            this.closeSidebar();
+        }
     }
     
     handleSwipe(startX, endX) {
@@ -388,173 +409,4 @@ class NotesApp {
     
     openAddThemeModal() {
         this.addThemeModal.classList.add('active');
-        this.newThemeName.value = '';
-        this.newThemeName.focus();
-    }
-    
-    closeAddThemeModal() {
-        this.addThemeModal.classList.remove('active');
-    }
-    
-    openSettingsModal() {
-        this.settingsModal.classList.add('active');
-    }
-    
-    closeSettingsModal() {
-        this.settingsModal.classList.remove('active');
-    }
-    
-    toggleTheme() {
-        this.isDarkTheme = this.themeToggle.checked;
-        this.applyTheme();
-    }
-    
-    addNewTheme() {
-        const themeName = this.newThemeName.value.trim();
-        if (!themeName) {
-            alert('Пожалуйста, введите название заметки');
-            return;
-        }
-        
-        const newTheme = {
-            id: Date.now().toString(),
-            name: themeName,
-            content: ''
-        };
-        
-        this.themes.push(newTheme);
-        this.saveThemes();
-        this.renderThemes();
-        this.openTheme(newTheme.id);
-        this.closeAddThemeModal();
-    }
-    
-    deleteTheme(themeId) {
-        if (SystemNotes.isSystemTheme(themeId)) {
-            alert('Системные конспекты нельзя удалить');
-            return;
-        }
-        
-        if (!confirm('Удалить эту заметку?')) {
-            return;
-        }
-        
-        this.themes = this.themes.filter(t => t.id !== themeId);
-        this.saveThemes();
-        
-        if (this.currentThemeId === themeId) {
-            this.currentThemeId = null;
-            this.noteEditor.value = '';
-            this.noteEditor.disabled = true;
-            this.noteEditor.readOnly = false;
-            this.currentThemeTitle.textContent = 'Выберите тему';
-            this.saveNoteBtn.disabled = true;
-            localStorage.removeItem('notesAppLastTheme');
-        }
-        
-        this.renderThemes();
-    }
-    
-    openTheme(themeId) {
-        const systemTheme = SystemNotes.getThemeById(themeId);
-        
-        if (systemTheme) {
-            this.saveCurrentNote();
-            
-            this.currentThemeId = themeId;
-            this.currentThemeTitle.textContent = systemTheme.name;
-            this.noteEditor.value = systemTheme.content || '';
-            this.noteEditor.disabled = true;
-            this.noteEditor.readOnly = true;
-            this.saveNoteBtn.disabled = true;
-            
-            localStorage.setItem('notesAppLastTheme', themeId);
-            this.renderThemes();
-            return;
-        }
-        
-        const theme = this.themes.find(t => t.id === themeId);
-        if (!theme) return;
-        
-        this.saveCurrentNote();
-        
-        this.currentThemeId = themeId;
-        this.currentThemeTitle.textContent = theme.name;
-        this.noteEditor.value = theme.content || '';
-        this.noteEditor.disabled = false;
-        this.noteEditor.readOnly = false;
-        this.saveNoteBtn.disabled = false;
-        this.noteEditor.focus();
-        
-        localStorage.setItem('notesAppLastTheme', themeId);
-        this.renderThemes();
-    }
-    
-    saveCurrentNote() {
-        if (!this.currentThemeId) return;
-        
-        if (SystemNotes.isSystemTheme(this.currentThemeId)) {
-            return;
-        }
-        
-        const theme = this.themes.find(t => t.id === this.currentThemeId);
-        if (theme) {
-            theme.content = this.noteEditor.value;
-            this.saveThemes();
-            this.showSaveIndicator();
-        }
-    }
-    
-    startAutoSave() {
-        clearTimeout(this.autoSaveTimer);
-        this.autoSaveTimer = setTimeout(() => {
-            this.saveCurrentNote();
-        }, 1000);
-    }
-    
-    showSaveIndicator() {
-        this.saveNoteBtn.textContent = 'Сохранено';
-        setTimeout(() => {
-            this.saveNoteBtn.textContent = 'Сохранить';
-        }, 2000);
-    }
-    
-    toggleSidebar() {
-        if (this.isSidebarOpen) {
-            this.closeSidebar();
-        } else {
-            this.openSidebar();
-        }
-    }
-    
-    openSidebar() {
-        this.sidebar.classList.add('open');
-        this.sidebarOverlay.classList.add('active');
-        this.isSidebarOpen = true;
-    }
-    
-    closeSidebar() {
-        this.sidebar.classList.remove('open');
-        this.sidebarOverlay.classList.remove('active');
-        this.isSidebarOpen = false;
-    }
-    
-    initServiceWorker() {
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker зарегистрирован:', registration);
-                    })
-                    .catch(error => {
-                        console.log('Ошибка регистрации Service Worker:', error);
-                    });
-            });
-        }
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const app = new NotesApp();
-    window.app = app;
-});
+        this.new
