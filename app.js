@@ -11,6 +11,10 @@ class NotesApp {
         this.isSidebarOpen = false;
         this.isSidebarCollapsed = false;
         this.isSettingsOpen = false;
+        this.sectionsState = {
+            system: true,
+            user: true
+        };
         
         this.initElements();
         this.loadThemePreference();
@@ -32,10 +36,9 @@ class NotesApp {
         this.currentThemeTitle = document.getElementById('currentThemeTitle');
         this.addThemeBtn = document.getElementById('addThemeBtn');
         this.saveNoteBtn = document.getElementById('saveNoteBtn');
-        this.menuToggle = document.getElementById('menuToggle');
         this.settingsBtn = document.getElementById('settingsBtn');
         this.collapseBtn = document.getElementById('collapseBtn');
-        this.collapseIcon = document.querySelector('.collapse-icon');
+        this.collapseIcon = document.getElementById('collapseIcon');
         this.addThemeModal = document.getElementById('addThemeModal');
         this.settingsPanel = document.getElementById('settingsPanel');
         this.newThemeName = document.getElementById('newThemeName');
@@ -122,7 +125,6 @@ class NotesApp {
         this.cancelAddTheme.addEventListener('click', () => this.closeAddThemeModal());
         this.confirmAddTheme.addEventListener('click', () => this.addNewTheme());
         this.saveNoteBtn.addEventListener('click', () => this.saveCurrentNote());
-        this.menuToggle.addEventListener('click', () => this.toggleSidebar());
         this.settingsBtn.addEventListener('click', () => this.toggleSettings());
         this.themeToggle.addEventListener('change', () => this.toggleTheme());
         this.closeOfflineBtn.addEventListener('click', () => this.hideOfflineIndicator());
@@ -180,15 +182,15 @@ class NotesApp {
         
         if (this.isSidebarCollapsed) {
             this.sidebar.classList.add('collapsed');
-            this.collapseIcon.textContent = '▶';
+            this.collapseIcon.className = 'arrow-icon arrow-right';
             // Перемещаем кнопку в main-header
             const mainHeader = document.querySelector('.main-header');
-            const menuToggle = document.getElementById('menuToggle');
-            mainHeader.insertBefore(this.collapseBtn, menuToggle);
+            const h1 = document.getElementById('currentThemeTitle');
+            mainHeader.insertBefore(this.collapseBtn, h1);
             this.collapseBtn.style.display = 'flex';
         } else {
             this.sidebar.classList.remove('collapsed');
-            this.collapseIcon.textContent = '◀';
+            this.collapseIcon.className = 'arrow-icon arrow-left';
             // Возвращаем кнопку в sidebar
             const sidebarHeaderTop = document.querySelector('.sidebar-header-top');
             const h2 = sidebarHeaderTop.querySelector('h2');
@@ -360,32 +362,78 @@ class NotesApp {
     renderThemes() {
         this.themeList.innerHTML = '';
         
+        // Системные темы
         if (this.systemThemes.length > 0) {
             const systemHeader = document.createElement('div');
             systemHeader.className = 'theme-section-header';
-            systemHeader.textContent = 'Конспекты';
+            systemHeader.innerHTML = `
+                <span>Конспекты</span>
+                <button class="section-toggle-btn" data-section="system">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="section-arrow ${this.sectionsState.system ? 'down' : 'right'}">
+                </button>
+            `;
             this.themeList.appendChild(systemHeader);
             
-            this.systemThemes.forEach(theme => {
-                this.renderThemeItem(theme, true);
-            });
+            if (this.sectionsState.system) {
+                this.systemThemes.forEach(theme => {
+                    this.renderThemeItem(theme, true);
+                });
+            }
         }
         
+        // Пользовательские темы
         const userHeader = document.createElement('div');
         userHeader.className = 'theme-section-header';
-        userHeader.textContent = 'Заметки';
+        userHeader.innerHTML = `
+            <span>Заметки</span>
+            <button class="section-toggle-btn" data-section="user">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="section-arrow ${this.sectionsState.user ? 'down' : 'right'}">
+            </button>
+        `;
         this.themeList.appendChild(userHeader);
         
-        if (this.themes.length > 0) {
-            this.themes.forEach(theme => {
-                this.renderThemeItem(theme, false);
-            });
-        } else {
-            const emptyMessage = document.createElement('div');
-            emptyMessage.className = 'empty-message';
-            emptyMessage.textContent = 'Создайте первую заметку';
-            this.themeList.appendChild(emptyMessage);
+        if (this.sectionsState.user) {
+            if (this.themes.length > 0) {
+                this.themes.forEach(theme => {
+                    this.renderThemeItem(theme, false);
+                });
+            } else {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'empty-message';
+                emptyMessage.textContent = 'Создайте первую заметку';
+                this.themeList.appendChild(emptyMessage);
+            }
         }
+        
+        // Добавляем обработчики для кнопок сворачивания секций
+        document.querySelectorAll('.section-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const section = btn.dataset.section;
+                this.toggleSection(section);
+            });
+        });
+        
+        // Добавляем обработчик для заголовков секций
+        document.querySelectorAll('.theme-section-header').forEach(header => {
+            header.addEventListener('click', (e) => {
+                if (e.target.closest('.section-toggle-btn')) return;
+                const btn = header.querySelector('.section-toggle-btn');
+                if (btn) {
+                    const section = btn.dataset.section;
+                    this.toggleSection(section);
+                }
+            });
+        });
+    }
+    
+    toggleSection(section) {
+        if (section === 'system') {
+            this.sectionsState.system = !this.sectionsState.system;
+        } else if (section === 'user') {
+            this.sectionsState.user = !this.sectionsState.user;
+        }
+        this.renderThemes();
     }
     
     renderThemeItem(theme, isSystem) {
@@ -499,7 +547,6 @@ class NotesApp {
             localStorage.setItem('notesAppLastTheme', themeId);
             this.renderThemes();
             
-            // Закрываем настройки если открыты
             if (this.isSettingsOpen) {
                 this.toggleSettings();
             }
@@ -522,7 +569,6 @@ class NotesApp {
         localStorage.setItem('notesAppLastTheme', themeId);
         this.renderThemes();
         
-        // Закрываем настройки если открыты
         if (this.isSettingsOpen) {
             this.toggleSettings();
         }
