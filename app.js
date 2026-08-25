@@ -168,14 +168,12 @@ class NotesApp {
     
     handleSwipe(startX, endX) {
         const swipeDistance = endX - startX;
-        const threshold = 100; // минимальная дистанция свайпа
+        const threshold = 100;
         
         if (Math.abs(swipeDistance) > threshold) {
             if (swipeDistance > 0 && startX < 50) {
-                // Свайп вправо от левого края - открываем меню
                 this.openSidebar();
             } else if (swipeDistance < 0 && this.isSidebarOpen) {
-                // Свайп влево - закрываем меню
                 this.closeSidebar();
             }
         }
@@ -511,52 +509,4 @@ class NotesApp {
         clearTimeout(this.autoSaveTimer);
         this.autoSaveTimer = setTimeout(() => {
             this.saveCurrentNote();
-        }, 1000);
-    }
-    
-    showSaveIndicator() {
-        this.saveNoteBtn.textContent = 'Сохранено';
-        setTimeout(() => {
-            this.saveNoteBtn.textContent = 'Сохранить';
-        }, 2000);
-    }
-    
-    toggleSidebar() {
-        if (this.isSidebarOpen) {
-            this.closeSidebar();
-        } else {
-            this.openSidebar();
-        }
-    }
-    
-    openSidebar() {
-        this.sidebar.classList.add('open');
-        this.sidebarOverlay.classList.add('active');
-        this.isSidebarOpen = true;
-    }
-    
-    closeSidebar() {
-        this.sidebar.classList.remove('open');
-        this.sidebarOverlay.classList.remove('active');
-        this.isSidebarOpen = false;
-    }
-    
-    initServiceWorker() {
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker зарегистрирован:', registration);
-                    })
-                    .catch(error => {
-                        console.log('Ошибка регистрации Service Worker:', error);
-                    });
-            });
-        }
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const app = new NotesApp();
-    window.app = app;
-});
+        }, 
