@@ -18,7 +18,6 @@ class NotesApp {
             user: false,
             editor: false
         };
-        this.currentCodeLang = 'html';
         
         this.initElements();
         this.loadThemePreference();
@@ -59,9 +58,7 @@ class NotesApp {
         this.closeOfflineBtn = document.getElementById('closeOfflineBtn');
         this.connectionIndicator = document.getElementById('connectionIndicator');
         this.codeEditor = document.getElementById('codeEditor');
-        this.htmlEditor = document.getElementById('htmlEditor');
-        this.cssEditor = document.getElementById('cssEditor');
-        this.jsEditor = document.getElementById('jsEditor');
+        this.codeTextarea = document.getElementById('codeTextarea');
         this.codeIframe = document.getElementById('codeIframe');
         this.consoleOutput = document.getElementById('consoleOutput');
         this.runCodeBtn = document.getElementById('runCodeBtn');
@@ -154,10 +151,6 @@ class NotesApp {
         this.confirmAddFile.addEventListener('click', () => this.addNewFile());
         this.runCodeBtn.addEventListener('click', () => this.runCode());
         
-        document.querySelectorAll('.code-tab').forEach(tab => {
-            tab.addEventListener('click', () => this.switchCodeTab(tab.dataset.lang));
-        });
-        
         this.addThemeModal.addEventListener('click', (e) => {
             if (e.target === this.addThemeModal) {
                 this.closeAddThemeModal();
@@ -174,10 +167,8 @@ class NotesApp {
             this.startAutoSave();
         });
         
-        [this.htmlEditor, this.cssEditor, this.jsEditor].forEach(editor => {
-            editor.addEventListener('input', () => {
-                this.saveCurrentFile();
-            });
+        this.codeTextarea.addEventListener('input', () => {
+            this.saveCurrentFile();
         });
         
         this.newThemeName.addEventListener('keypress', (e) => {
@@ -211,25 +202,20 @@ class NotesApp {
         });
     }
     
-    switchCodeTab(lang) {
-        this.currentCodeLang = lang;
-        
-        document.querySelectorAll('.code-tab').forEach(tab => {
-            tab.classList.remove('active');
-            if (tab.dataset.lang === lang) {
-                tab.classList.add('active');
-            }
-        });
-        
-        this.htmlEditor.style.display = lang === 'html' ? 'block' : 'none';
-        this.cssEditor.style.display = lang === 'css' ? 'block' : 'none';
-        this.jsEditor.style.display = lang === 'js' ? 'block' : 'none';
+    getFileExtension(filename) {
+        const parts = filename.split('.');
+        if (parts.length > 1) {
+            return parts[parts.length - 1].toLowerCase();
+        }
+        return '';
     }
     
     runCode() {
-        const html = this.htmlEditor.value;
-        const css = this.cssEditor.value;
-        const js = this.jsEditor.value;
+        const code = this.codeTextarea.value;
+        const fileName = this.currentFileId ? 
+            this.codeFiles.find(f => f.id === this.currentFileId)?.name || 'index.html' : 
+            'index.html';
+        const extension = this.getFileExtension(fileName);
         
         // Очищаем консоль
         this.consoleOutput.innerHTML = '';
@@ -255,22 +241,39 @@ class NotesApp {
         };
         
         try {
-            // Создаем HTML документ
-            const fullHtml = `<!DOCTYPE html>
+            if (extension === 'html' || extension === 'htm') {
+                // Для HTML файлов - просто загружаем весь код
+                this.codeIframe.srcdoc = code;
+            } else if (extension === 'css') {
+                // Для CSS - создаем HTML обертку
+                const fullHtml = `<!DOCTYPE html>
 <html>
 <head>
-<style>${css}</style>
+<style>${code}</style>
 </head>
 <body>
-${html}
-<script>
-${js}
-<\/script>
+<div id="preview">CSS предпросмотр</div>
 </body>
 </html>`;
-            
-            // Загружаем в iframe
-            this.codeIframe.srcdoc = fullHtml;
+                this.codeIframe.srcdoc = fullHtml;
+            } else if (extension === 'js') {
+                // Для JS - выполняем код
+                const result = new Function(code)();
+                if (result !== undefined) {
+                    this.addConsoleMessage(String(result), 'log');
+                }
+                // Создаем простой HTML для отображения
+                const fullHtml = `<!DOCTYPE html>
+<html>
+<body>
+<div>JavaScript выполнен. Смотрите консоль.</div>
+</body>
+</html>`;
+                this.codeIframe.srcdoc = fullHtml;
+            } else {
+                // По умолчанию - просто показываем как HTML
+                this.codeIframe.srcdoc = code;
+            }
         } catch (error) {
             this.addConsoleMessage(error.message, 'error');
         }
@@ -498,9 +501,11 @@ ${js}
             systemHeader.className = 'theme-section-header';
             systemHeader.innerHTML = `
                 <span>Конспекты</span>
-                <button class="section-toggle-btn" data-section="system">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="section-arrow ${this.sectionsState.system ? 'up' : 'down'}">
-                </button>
+                <div class="section-header-right">
+                    <button class="section-toggle-btn" data-section="system">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="section-arrow ${this.sectionsState.system ? 'up' : 'down'}">
+                    </button>
+                </div>
             `;
             this.themeList.appendChild(systemHeader);
             
@@ -516,9 +521,11 @@ ${js}
         userHeader.className = 'theme-section-header';
         userHeader.innerHTML = `
             <span>Заметки</span>
-            <button class="section-toggle-btn" data-section="user">
-                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="section-arrow ${this.sectionsState.user ? 'up' : 'down'}">
-            </button>
+            <div class="section-header-right">
+                <button class="section-toggle-btn" data-section="user">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="section-arrow ${this.sectionsState.user ? 'up' : 'down'}">
+                </button>
+            </div>
         `;
         this.themeList.appendChild(userHeader);
         
@@ -539,13 +546,13 @@ ${js}
         const editorHeader = document.createElement('div');
         editorHeader.className = 'theme-section-header';
         editorHeader.innerHTML = `
-            <div class="section-header-left">
+            <span>Редактор</span>
+            <div class="section-header-right">
                 <button class="section-add-btn" id="addFileBtn" title="Добавить файл">+</button>
                 <button class="section-toggle-btn" data-section="editor">
                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="section-arrow ${this.sectionsState.editor ? 'up' : 'down'}">
                 </button>
             </div>
-            <span>Редактор</span>
         `;
         this.themeList.appendChild(editorHeader);
         
@@ -723,9 +730,7 @@ ${js}
         const newFile = {
             id: Date.now().toString(),
             name: fileName,
-            html: '',
-            css: '',
-            js: ''
+            content: ''
         };
         
         this.codeFiles.push(newFile);
@@ -839,9 +844,7 @@ ${js}
         this.codeEditor.style.display = 'flex';
         this.isSettingsOpen = false;
         
-        this.htmlEditor.value = file.html || '';
-        this.cssEditor.value = file.css || '';
-        this.jsEditor.value = file.js || '';
+        this.codeTextarea.value = file.content || '';
         
         this.saveNoteBtn.disabled = true;
         
@@ -868,9 +871,7 @@ ${js}
         
         const file = this.codeFiles.find(f => f.id === this.currentFileId);
         if (file) {
-            file.html = this.htmlEditor.value;
-            file.css = this.cssEditor.value;
-            file.js = this.jsEditor.value;
+            file.content = this.codeTextarea.value;
             this.saveCodeFiles();
             this.showSaveIndicator();
         }
