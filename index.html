@@ -81,11 +81,23 @@
                     <textarea class="code-textarea" id="codeTextarea" placeholder="Введите ваш код здесь..."></textarea>
                     <div class="code-actions">
                         <button class="run-btn" id="runCodeBtn">Запустить</button>
+                        <button class="toggle-output-btn" id="toggleOutputBtn" title="Показать/скрыть результат">
+                            <span class="toggle-icon">📄</span>
+                        </button>
                     </div>
-                    <div class="code-output">
-                        <iframe id="codeIframe" sandbox="allow-scripts allow-modals"></iframe>
-                        <div class="console-output" id="consoleOutput"></div>
+                    <div class="code-output-mini" id="codeOutputMini" style="display: none;">
+                        <iframe id="codeIframeMini" sandbox="allow-scripts allow-modals"></iframe>
                     </div>
+                </div>
+                
+                <!-- Полноэкранный вывод -->
+                <div class="fullscreen-output" id="fullscreenOutput" style="display: none;">
+                    <div class="fullscreen-header">
+                        <h3>Результат</h3>
+                        <button class="close-fullscreen-btn" id="closeFullscreenBtn">×</button>
+                    </div>
+                    <iframe id="codeIframeFull" sandbox="allow-scripts allow-modals"></iframe>
+                    <div class="console-output-full" id="consoleOutputFull"></div>
                 </div>
                 
                 <!-- Настройки на месте редактора -->
