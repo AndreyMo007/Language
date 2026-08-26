@@ -27,6 +27,7 @@ class NotesApp {
         this.loadCodeFiles();
         this.attachEventListeners();
         this.initResizer();
+        this.initCodeEditor();
         this.initServiceWorker();
         this.initConnectionMonitoring();
     }
@@ -62,6 +63,7 @@ class NotesApp {
         // Редактор кода
         this.codeEditor = document.getElementById('codeEditor');
         this.codeTextarea = document.getElementById('codeTextarea');
+        this.lineNumbers = document.getElementById('lineNumbers');
         this.codeEditorTop = document.getElementById('codeEditorTop');
         this.codeEditorBottom = document.getElementById('codeEditorBottom');
         this.resizerHorizontal = document.getElementById('resizerHorizontal');
@@ -73,6 +75,32 @@ class NotesApp {
         this.fullscreenOverlay = document.getElementById('fullscreenOverlay');
         this.codeIframeFull = document.getElementById('codeIframeFull');
         this.closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
+    }
+    
+    initCodeEditor() {
+        // Обновление нумерации строк
+        this.codeTextarea.addEventListener('input', () => {
+            this.updateLineNumbers();
+        });
+        
+        this.codeTextarea.addEventListener('scroll', () => {
+            this.syncScroll();
+        });
+        
+        this.updateLineNumbers();
+    }
+    
+    updateLineNumbers() {
+        const lines = this.codeTextarea.value.split('\n').length;
+        let lineNumbers = '';
+        for (let i = 1; i <= lines; i++) {
+            lineNumbers += i + '\n';
+        }
+        this.lineNumbers.textContent = lineNumbers;
+    }
+    
+    syncScroll() {
+        this.lineNumbers.scrollTop = this.codeTextarea.scrollTop;
     }
     
     initResizer() {
@@ -105,7 +133,6 @@ class NotesApp {
             }
         });
         
-        // Touch
         this.resizerHorizontal.addEventListener('touchstart', (e) => {
             isResizing = true;
             e.preventDefault();
@@ -227,7 +254,10 @@ class NotesApp {
         });
         
         this.noteEditor.addEventListener('input', () => this.startAutoSave());
-        this.codeTextarea.addEventListener('input', () => this.saveCurrentFile());
+        this.codeTextarea.addEventListener('input', () => {
+            this.saveCurrentFile();
+            this.updateLineNumbers();
+        });
         
         this.newThemeName.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.addNewTheme();
@@ -253,6 +283,19 @@ class NotesApp {
         document.addEventListener('touchend', (e) => {
             touchEndX = e.changedTouches[0].screenX;
             this.handleSwipe(touchStartX, touchEndX);
+        });
+        
+        // Tab в редакторе
+        this.codeTextarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.codeTextarea.selectionStart;
+                const end = this.codeTextarea.selectionEnd;
+                this.codeTextarea.value = this.codeTextarea.value.substring(0, start) + '    ' + this.codeTextarea.value.substring(end);
+                this.codeTextarea.selectionStart = this.codeTextarea.selectionEnd = start + 4;
+                this.updateLineNumbers();
+                this.saveCurrentFile();
+            }
         });
     }
     
@@ -293,12 +336,18 @@ class NotesApp {
         };
         
         try {
-            if (extension === 'js') {
+            if (extension === 'js' || extension === 'javascript') {
                 const result = new Function(code)();
                 if (result !== undefined) {
                     this.addConsoleMessage(String(result), 'log');
                 }
                 this.addConsoleMessage('JavaScript выполнен успешно', 'log');
+            } else if (extension === 'python' || extension === 'py') {
+                this.addConsoleMessage('Python код. Для выполнения требуется интерпретатор Python.', 'warn');
+                this.addConsoleMessage('Код сохранен и готов к просмотру.', 'log');
+            } else if (extension === 'cpp' || extension === 'c++' || extension === 'cc') {
+                this.addConsoleMessage('C++ код. Для выполнения требуется компилятор.', 'warn');
+                this.addConsoleMessage('Код сохранен и готов к просмотру.', 'log');
             } else if (extension === 'html' || extension === 'htm') {
                 this.addConsoleMessage('HTML код готов к просмотру. Нажмите кнопку открытия окна.', 'log');
             } else if (extension === 'css') {
@@ -338,7 +387,7 @@ class NotesApp {
 </body>
 </html>`;
                 this.codeIframeFull.srcdoc = fullHtml;
-            } else if (extension === 'js') {
+            } else if (extension === 'js' || extension === 'javascript') {
                 const originalLog = console.log;
                 console.log = (...args) => {
                     this.addConsoleMessage(args.join(' '), 'log');
@@ -355,8 +404,24 @@ class NotesApp {
 </body>
 </html>`;
                 this.codeIframeFull.srcdoc = fullHtml;
+            } else if (extension === 'python' || extension === 'py') {
+                this.codeIframeFull.srcdoc = `<!DOCTYPE html>
+<html>
+<body>
+<pre style="padding: 20px; font-family: monospace; background: #f5f5f5;">${code}</pre>
+<p style="padding: 10px 20px; font-family: sans-serif; color: #666;">Python код. Для выполнения требуется интерпретатор Python.</p>
+</body>
+</html>`;
+            } else if (extension === 'cpp' || extension === 'c++' || extension === 'cc') {
+                this.codeIframeFull.srcdoc = `<!DOCTYPE html>
+<html>
+<body>
+<pre style="padding: 20px; font-family: monospace; background: #f5f5f5;">${code}</pre>
+<p style="padding: 10px 20px; font-family: sans-serif; color: #666;">C++ код. Для выполнения требуется компилятор.</p>
+</body>
+</html>`;
             } else {
-                this.codeIframeFull.srcdoc = `<pre style="padding: 20px; font-family: monospace;">${code}</pre>`;
+                this.codeIframeFull.srcdoc = `<pre style="padding: 20px; font-family: monospace; background: #f5f5f5;">${code}</pre>`;
             }
             
             this.fullscreenOverlay.style.display = 'flex';
@@ -898,6 +963,7 @@ class NotesApp {
         this.isSettingsOpen = false;
         
         this.codeTextarea.value = file.content || '';
+        this.updateLineNumbers();
         
         this.saveNoteBtn.disabled = true;
         
