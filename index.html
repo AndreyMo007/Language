@@ -9,14 +9,12 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Экран установки (показывается в браузере) -->
+    <!-- Экран установки -->
     <div class="install-screen" id="installScreen">
         <div class="install-container">
             <h1>Заметки</h1>
             <p>Установите приложение для оффлайн доступа к вашим заметкам</p>
-            <button class="install-btn" id="installBtn">
-                Установить приложение
-            </button>
+            <button class="install-btn" id="installBtn">Установить приложение</button>
             <div class="install-info">
                 <p>Работает оффлайн</p>
                 <p>Данные хранятся локально</p>
@@ -27,12 +25,10 @@
         </div>
     </div>
 
-    <!-- Основное приложение (показывается в PWA) -->
+    <!-- Основное приложение -->
     <div class="app" id="app" style="display: none;">
-        <!-- Затемнение для мобильного меню -->
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
         
-        <!-- Боковое меню -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-header-top">
@@ -43,19 +39,16 @@
                 </div>
                 <button class="add-theme-btn" id="addThemeBtn">Новая заметка</button>
             </div>
-            <nav class="theme-list" id="themeList">
-                <!-- Темы будут добавляться сюда -->
-            </nav>
+            <nav class="theme-list" id="themeList"></nav>
         </aside>
 
-        <!-- Основная область -->
         <main class="main-content">
             <header class="main-header">
                 <button class="expand-btn" id="expandBtn" title="Развернуть меню" style="display: none;">
                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="Развернуть" class="arrow-icon expand-arrow">
                 </button>
                 <h1 id="currentThemeTitle">Выберите тему</h1>
-                <div class="connection-indicator" id="connectionIndicator" title="Статус подключения"></div>
+                <div class="connection-indicator" id="connectionIndicator"></div>
                 <button class="save-btn" id="saveNoteBtn">Сохранить</button>
                 <button class="settings-icon-btn" id="settingsBtn" title="Настройки">
                     <span class="menu-icon-line"></span>
@@ -65,28 +58,38 @@
             </header>
             
             <div class="offline-indicator" id="offlineIndicator" style="display: none;">
-                <span>Оффлайн режим - все данные сохранены локально</span>
+                <span>Оффлайн режим</span>
                 <button class="close-offline" id="closeOfflineBtn">×</button>
             </div>
             
             <div class="editor-area">
-                <textarea 
-                    id="noteEditor" 
-                    placeholder="Введите вашу заметку здесь..."
-                    disabled
-                ></textarea>
+                <textarea id="noteEditor" placeholder="Введите вашу заметку здесь..." disabled></textarea>
                 
                 <!-- Редактор кода -->
                 <div class="code-editor" id="codeEditor" style="display: none;">
-                    <textarea class="code-textarea" id="codeTextarea" placeholder="Введите ваш код здесь..."></textarea>
-                    <div class="code-actions">
-                        <button class="run-btn" id="runCodeBtn">Запустить</button>
-                        <button class="toggle-output-btn" id="toggleOutputBtn" title="Показать/скрыть результат">
-                            <span class="toggle-icon">📄</span>
-                        </button>
+                    <div class="code-editor-top" id="codeEditorTop">
+                        <textarea class="code-textarea" id="codeTextarea" placeholder="Введите ваш код здесь..."></textarea>
                     </div>
-                    <div class="code-output-mini" id="codeOutputMini" style="display: none;">
-                        <iframe id="codeIframeMini" sandbox="allow-scripts allow-modals"></iframe>
+                    
+                    <div class="resizer-horizontal" id="resizerHorizontal"></div>
+                    
+                    <div class="code-editor-bottom" id="codeEditorBottom">
+                        <div class="code-actions">
+                            <button class="run-btn" id="runCodeBtn">Запустить</button>
+                            <button class="open-window-btn" id="openWindowBtn" title="Открыть в новом окне">
+                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='25' y='25' width='50' height='50' fill='none' stroke='white' stroke-width='5'/%3E%3Cpath d='M25 75 L75 25 M75 25 L50 25 M75 25 L75 50' stroke='white' stroke-width='5' fill='none'/%3E%3C/svg%3E" alt="Открыть">
+                            </button>
+                        </div>
+                        
+                        <div class="console-container" id="consoleContainer">
+                            <div class="console-header">
+                                <span>Консоль</span>
+                                <button class="console-toggle-btn" id="consoleToggleBtn">
+                                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="console-arrow" id="consoleArrow">
+                                </button>
+                            </div>
+                            <div class="console-output" id="consoleOutput"></div>
+                        </div>
                     </div>
                 </div>
                 
@@ -97,14 +100,11 @@
                         <button class="close-fullscreen-btn" id="closeFullscreenBtn">×</button>
                     </div>
                     <iframe id="codeIframeFull" sandbox="allow-scripts allow-modals"></iframe>
-                    <div class="console-output-full" id="consoleOutputFull"></div>
                 </div>
                 
-                <!-- Настройки на месте редактора -->
+                <!-- Настройки -->
                 <div class="settings-panel" id="settingsPanel" style="display: none;">
-                    <div class="settings-header">
-                        <h3>Настройки</h3>
-                    </div>
+                    <div class="settings-header"><h3>Настройки</h3></div>
                     <div class="settings-content">
                         <div class="settings-option">
                             <label for="themeToggle">Темная тема</label>
@@ -116,7 +116,7 @@
         </main>
     </div>
 
-    <!-- Модальное окно для добавления темы -->
+    <!-- Модальные окна -->
     <div class="modal" id="addThemeModal">
         <div class="modal-content">
             <h3>Новая заметка</h3>
@@ -128,11 +128,10 @@
         </div>
     </div>
 
-    <!-- Модальное окно для добавления файла -->
     <div class="modal" id="addFileModal">
         <div class="modal-content">
             <h3>Новый файл</h3>
-            <input type="text" id="newFileName" placeholder="Название файла (например: index.html)">
+            <input type="text" id="newFileName" placeholder="Название файла">
             <div class="modal-buttons">
                 <button id="cancelAddFile">Отмена</button>
                 <button id="confirmAddFile">Создать</button>
