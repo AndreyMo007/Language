@@ -76,6 +76,25 @@
                     disabled
                 ></textarea>
                 
+                <!-- Редактор кода -->
+                <div class="code-editor" id="codeEditor" style="display: none;">
+                    <div class="code-tabs">
+                        <button class="code-tab active" data-lang="html">HTML</button>
+                        <button class="code-tab" data-lang="css">CSS</button>
+                        <button class="code-tab" data-lang="js">JavaScript</button>
+                    </div>
+                    <textarea class="code-textarea" id="htmlEditor" placeholder="HTML код..."></textarea>
+                    <textarea class="code-textarea" id="cssEditor" placeholder="CSS код..." style="display: none;"></textarea>
+                    <textarea class="code-textarea" id="jsEditor" placeholder="JavaScript код..." style="display: none;"></textarea>
+                    <div class="code-actions">
+                        <button class="run-btn" id="runCodeBtn">Запустить</button>
+                    </div>
+                    <div class="code-output">
+                        <iframe id="codeIframe" sandbox="allow-scripts allow-modals"></iframe>
+                        <div class="console-output" id="consoleOutput"></div>
+                    </div>
+                </div>
+                
                 <!-- Настройки на месте редактора -->
                 <div class="settings-panel" id="settingsPanel" style="display: none;">
                     <div class="settings-header">
@@ -100,6 +119,18 @@
             <div class="modal-buttons">
                 <button id="cancelAddTheme">Отмена</button>
                 <button id="confirmAddTheme">Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для добавления файла -->
+    <div class="modal" id="addFileModal">
+        <div class="modal-content">
+            <h3>Новый файл</h3>
+            <input type="text" id="newFileName" placeholder="Название файла (например: index.html)">
+            <div class="modal-buttons">
+                <button id="cancelAddFile">Отмена</button>
+                <button id="confirmAddFile">Создать</button>
             </div>
         </div>
     </div>
