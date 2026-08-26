@@ -78,13 +78,24 @@ class NotesApp {
     }
     
     initCodeEditor() {
-        // Обновление нумерации строк
+        // Обновление нумерации строк при вводе
         this.codeTextarea.addEventListener('input', () => {
             this.updateLineNumbers();
         });
         
+        // Синхронизация скролла
         this.codeTextarea.addEventListener('scroll', () => {
-            this.syncScroll();
+            this.lineNumbers.scrollTop = this.codeTextarea.scrollTop;
+        });
+        
+        // Обработка вставки большого кода
+        this.codeTextarea.addEventListener('paste', () => {
+            setTimeout(() => {
+                this.updateLineNumbers();
+                // Не прокручиваем автоматически вниз
+                this.codeTextarea.blur();
+                this.codeTextarea.focus();
+            }, 50);
         });
         
         this.updateLineNumbers();
@@ -97,6 +108,11 @@ class NotesApp {
             lineNumbers += i + '\n';
         }
         this.lineNumbers.textContent = lineNumbers;
+        
+        // Автоматически подстраиваем ширину под количество цифр
+        const lineCount = lines.toString().length;
+        const newWidth = Math.max(50, lineCount * 12 + 20);
+        this.lineNumbers.style.minWidth = newWidth + 'px';
     }
     
     syncScroll() {
@@ -254,10 +270,6 @@ class NotesApp {
         });
         
         this.noteEditor.addEventListener('input', () => this.startAutoSave());
-        this.codeTextarea.addEventListener('input', () => {
-            this.saveCurrentFile();
-            this.updateLineNumbers();
-        });
         
         this.newThemeName.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.addNewTheme();
@@ -296,6 +308,12 @@ class NotesApp {
                 this.updateLineNumbers();
                 this.saveCurrentFile();
             }
+        });
+        
+        // Сохранение при вводе
+        this.codeTextarea.addEventListener('input', () => {
+            this.saveCurrentFile();
+            this.updateLineNumbers();
         });
     }
     
