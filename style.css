@@ -170,11 +170,11 @@ body {
 }
 
 .collapse-arrow {
-    transform: rotate(90deg); /* Стрелка влево */
+    transform: rotate(90deg);
 }
 
 .expand-arrow {
-    transform: rotate(-90deg); /* Стрелка вправо */
+    transform: rotate(-90deg);
 }
 
 .add-theme-btn {
@@ -199,7 +199,6 @@ body {
     padding: 10px;
 }
 
-/* Убираем серый фон у скроллбара, оставляем только ползунок */
 .theme-list::-webkit-scrollbar {
     width: 6px;
 }
@@ -232,7 +231,7 @@ body {
     user-select: none;
 }
 
-.section-header-left {
+.section-header-right {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -267,11 +266,11 @@ body {
 }
 
 .section-arrow.down {
-    transform: rotate(0deg); /* Стрелка вниз */
+    transform: rotate(0deg);
 }
 
 .section-arrow.up {
-    transform: rotate(180deg); /* Стрелка вверх */
+    transform: rotate(180deg);
 }
 
 .theme-item {
@@ -392,7 +391,6 @@ body {
     opacity: 0.5;
 }
 
-/* Кнопка настроек с тремя линиями */
 .settings-icon-btn {
     background: none;
     border: none;
@@ -444,7 +442,6 @@ body {
     transition: border-color 0.3s ease;
 }
 
-/* Убираем зеленую рамку при фокусе */
 #noteEditor:focus {
     border-color: #3d3d3d;
 }
@@ -471,33 +468,12 @@ body {
     gap: 10px;
 }
 
-.code-tabs {
-    display: flex;
-    gap: 5px;
-}
-
-.code-tab {
-    padding: 8px 15px;
-    background: #3d3d3d;
-    color: #e0e0e0;
-    border: none;
-    border-radius: 6px 6px 0 0;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background 0.2s;
-}
-
-.code-tab.active {
-    background: #4a4a4a;
-    color: #fff;
-}
-
 .code-textarea {
     width: 100%;
     flex: 1;
     background: #1a1a1a;
     border: 1px solid #3d3d3d;
-    border-radius: 0 0 8px 8px;
+    border-radius: 8px;
     padding: 15px;
     color: #e0e0e0;
     font-family: 'Courier New', monospace;
@@ -912,16 +888,6 @@ body.light-theme .code-textarea {
     background: #f5f5f5;
     border: 1px solid #ddd;
     color: #333;
-}
-
-body.light-theme .code-tab {
-    background: #e0e0e0;
-    color: #333;
-}
-
-body.light-theme .code-tab.active {
-    background: #d0d0d0;
-    color: #000;
 }
 
 body.light-theme .console-output {
