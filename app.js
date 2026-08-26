@@ -78,7 +78,7 @@ class NotesApp {
     }
     
     initCodeEditor() {
-        // Обновление нумерации строк при вводе
+        // Обновление нумерации строк
         this.codeTextarea.addEventListener('input', () => {
             this.updateLineNumbers();
         });
@@ -86,16 +86,6 @@ class NotesApp {
         // Синхронизация скролла
         this.codeTextarea.addEventListener('scroll', () => {
             this.lineNumbers.scrollTop = this.codeTextarea.scrollTop;
-        });
-        
-        // Обработка вставки большого кода
-        this.codeTextarea.addEventListener('paste', () => {
-            setTimeout(() => {
-                this.updateLineNumbers();
-                // Не прокручиваем автоматически вниз
-                this.codeTextarea.blur();
-                this.codeTextarea.focus();
-            }, 50);
         });
         
         this.updateLineNumbers();
@@ -108,11 +98,7 @@ class NotesApp {
             lineNumbers += i + '\n';
         }
         this.lineNumbers.textContent = lineNumbers;
-        
-        // Автоматически подстраиваем ширину под количество цифр
-        const lineCount = lines.toString().length;
-        const newWidth = Math.max(50, lineCount * 12 + 20);
-        this.lineNumbers.style.minWidth = newWidth + 'px';
+        // Ширина фиксированная 60px, не меняем
     }
     
     syncScroll() {
@@ -684,10 +670,12 @@ class NotesApp {
         // Редактор
         const editorHeader = document.createElement('div');
         editorHeader.className = 'theme-section-header';
+        const addBtnHtml = this.sectionsState.editor ? 
+            `<button class="section-add-btn" id="addFileBtn" title="Добавить файл">+</button>` : '';
         editorHeader.innerHTML = `
             <span>Редактор</span>
             <div class="section-header-right">
-                <button class="section-add-btn" id="addFileBtn" title="Добавить файл">+</button>
+                ${addBtnHtml}
                 <button class="section-toggle-btn" data-section="editor">
                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="section-arrow ${this.sectionsState.editor ? 'up' : 'down'}">
                 </button>
