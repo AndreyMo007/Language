@@ -1,7 +1,9 @@
 class NotesApp {
     constructor() {
         this.themes = [];
+        this.codeFiles = [];
         this.currentThemeId = null;
+        this.currentFileId = null;
         this.autoSaveTimer = null;
         this.deferredPrompt = null;
         this.systemThemes = SystemNotes.getAllThemes();
@@ -12,14 +14,17 @@ class NotesApp {
         this.isSidebarCollapsed = false;
         this.isSettingsOpen = false;
         this.sectionsState = {
-            system: false, // Закрыт по умолчанию (стрелка вправо)
-            user: false     // Закрыт по умолчанию (стрелка вправо)
+            system: false,
+            user: false,
+            editor: false
         };
+        this.currentCodeLang = 'html';
         
         this.initElements();
         this.loadThemePreference();
         this.checkInstallMode();
         this.loadThemes();
+        this.loadCodeFiles();
         this.attachEventListeners();
         this.initServiceWorker();
         this.initConnectionMonitoring();
@@ -41,14 +46,25 @@ class NotesApp {
         this.expandBtn = document.getElementById('expandBtn');
         this.collapseIcon = document.getElementById('collapseIcon');
         this.addThemeModal = document.getElementById('addThemeModal');
+        this.addFileModal = document.getElementById('addFileModal');
         this.settingsPanel = document.getElementById('settingsPanel');
         this.newThemeName = document.getElementById('newThemeName');
+        this.newFileName = document.getElementById('newFileName');
         this.cancelAddTheme = document.getElementById('cancelAddTheme');
         this.confirmAddTheme = document.getElementById('confirmAddTheme');
+        this.cancelAddFile = document.getElementById('cancelAddFile');
+        this.confirmAddFile = document.getElementById('confirmAddFile');
         this.themeToggle = document.getElementById('themeToggle');
         this.offlineIndicator = document.getElementById('offlineIndicator');
         this.closeOfflineBtn = document.getElementById('closeOfflineBtn');
         this.connectionIndicator = document.getElementById('connectionIndicator');
+        this.codeEditor = document.getElementById('codeEditor');
+        this.htmlEditor = document.getElementById('htmlEditor');
+        this.cssEditor = document.getElementById('cssEditor');
+        this.jsEditor = document.getElementById('jsEditor');
+        this.codeIframe = document.getElementById('codeIframe');
+        this.consoleOutput = document.getElementById('consoleOutput');
+        this.runCodeBtn = document.getElementById('runCodeBtn');
     }
     
     loadThemePreference() {
@@ -133,14 +149,35 @@ class NotesApp {
         this.collapseBtn.addEventListener('click', () => this.collapseSidebar());
         this.expandBtn.addEventListener('click', () => this.expandSidebar());
         
+        // Редактор кода
+        this.cancelAddFile.addEventListener('click', () => this.closeAddFileModal());
+        this.confirmAddFile.addEventListener('click', () => this.addNewFile());
+        this.runCodeBtn.addEventListener('click', () => this.runCode());
+        
+        document.querySelectorAll('.code-tab').forEach(tab => {
+            tab.addEventListener('click', () => this.switchCodeTab(tab.dataset.lang));
+        });
+        
         this.addThemeModal.addEventListener('click', (e) => {
             if (e.target === this.addThemeModal) {
                 this.closeAddThemeModal();
             }
         });
         
+        this.addFileModal.addEventListener('click', (e) => {
+            if (e.target === this.addFileModal) {
+                this.closeAddFileModal();
+            }
+        });
+        
         this.noteEditor.addEventListener('input', () => {
             this.startAutoSave();
+        });
+        
+        [this.htmlEditor, this.cssEditor, this.jsEditor].forEach(editor => {
+            editor.addEventListener('input', () => {
+                this.saveCurrentFile();
+            });
         });
         
         this.newThemeName.addEventListener('keypress', (e) => {
@@ -149,8 +186,15 @@ class NotesApp {
             }
         });
         
+        this.newFileName.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.addNewFile();
+            }
+        });
+        
         window.addEventListener('beforeunload', () => {
             this.saveCurrentNote();
+            this.saveCurrentFile();
         });
         
         // Обработка свайпов для мобильных
@@ -167,15 +211,97 @@ class NotesApp {
         });
     }
     
+    switchCodeTab(lang) {
+        this.currentCodeLang = lang;
+        
+        document.querySelectorAll('.code-tab').forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.dataset.lang === lang) {
+                tab.classList.add('active');
+            }
+        });
+        
+        this.htmlEditor.style.display = lang === 'html' ? 'block' : 'none';
+        this.cssEditor.style.display = lang === 'css' ? 'block' : 'none';
+        this.jsEditor.style.display = lang === 'js' ? 'block' : 'none';
+    }
+    
+    runCode() {
+        const html = this.htmlEditor.value;
+        const css = this.cssEditor.value;
+        const js = this.jsEditor.value;
+        
+        // Очищаем консоль
+        this.consoleOutput.innerHTML = '';
+        
+        // Перехватываем console.log
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = (...args) => {
+            this.addConsoleMessage(args.join(' '), 'log');
+            originalLog.apply(console, args);
+        };
+        
+        console.error = (...args) => {
+            this.addConsoleMessage(args.join(' '), 'error');
+            originalError.apply(console, args);
+        };
+        
+        console.warn = (...args) => {
+            this.addConsoleMessage(args.join(' '), 'warn');
+            originalWarn.apply(console, args);
+        };
+        
+        try {
+            // Создаем HTML документ
+            const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+<style>${css}</style>
+</head>
+<body>
+${html}
+<script>
+${js}
+<\/script>
+</body>
+</html>`;
+            
+            // Загружаем в iframe
+            this.codeIframe.srcdoc = fullHtml;
+        } catch (error) {
+            this.addConsoleMessage(error.message, 'error');
+        }
+        
+        // Восстанавливаем console
+        console.log = originalLog;
+        console.error = originalError;
+        console.warn = originalWarn;
+    }
+    
+    addConsoleMessage(message, type) {
+        const msgElement = document.createElement('div');
+        msgElement.className = `console-${type}`;
+        msgElement.textContent = message;
+        this.consoleOutput.appendChild(msgElement);
+        this.consoleOutput.scrollTop = this.consoleOutput.scrollHeight;
+    }
+    
     toggleSettings() {
         this.isSettingsOpen = !this.isSettingsOpen;
         
         if (this.isSettingsOpen) {
             this.noteEditor.style.display = 'none';
+            this.codeEditor.style.display = 'none';
             this.settingsPanel.style.display = 'block';
         } else {
             this.noteEditor.style.display = 'block';
             this.settingsPanel.style.display = 'none';
+            if (this.currentFileId) {
+                this.codeEditor.style.display = 'flex';
+            }
         }
     }
     
@@ -185,7 +311,6 @@ class NotesApp {
         this.collapseBtn.style.display = 'none';
         this.expandBtn.style.display = 'flex';
         
-        // Закрываем мобильное меню если оно было открыто
         if (window.innerWidth <= 768) {
             this.closeSidebar();
         }
@@ -353,10 +478,21 @@ class NotesApp {
         localStorage.setItem('notesAppThemes', JSON.stringify(this.themes));
     }
     
+    loadCodeFiles() {
+        const savedFiles = localStorage.getItem('notesAppCodeFiles');
+        if (savedFiles) {
+            this.codeFiles = JSON.parse(savedFiles);
+        }
+    }
+    
+    saveCodeFiles() {
+        localStorage.setItem('notesAppCodeFiles', JSON.stringify(this.codeFiles));
+    }
+    
     renderThemes() {
         this.themeList.innerHTML = '';
         
-        // Системные темы
+        // Системные темы (Конспекты)
         if (this.systemThemes.length > 0) {
             const systemHeader = document.createElement('div');
             systemHeader.className = 'theme-section-header';
@@ -375,7 +511,7 @@ class NotesApp {
             }
         }
         
-        // Пользовательские темы
+        // Пользовательские темы (Заметки)
         const userHeader = document.createElement('div');
         userHeader.className = 'theme-section-header';
         userHeader.innerHTML = `
@@ -399,7 +535,34 @@ class NotesApp {
             }
         }
         
-        // Добавляем обработчики для кнопок сворачивания секций
+        // Секция Редактор
+        const editorHeader = document.createElement('div');
+        editorHeader.className = 'theme-section-header';
+        editorHeader.innerHTML = `
+            <div class="section-header-left">
+                <button class="section-add-btn" id="addFileBtn" title="Добавить файл">+</button>
+                <button class="section-toggle-btn" data-section="editor">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="section-arrow ${this.sectionsState.editor ? 'up' : 'down'}">
+                </button>
+            </div>
+            <span>Редактор</span>
+        `;
+        this.themeList.appendChild(editorHeader);
+        
+        if (this.sectionsState.editor) {
+            if (this.codeFiles.length > 0) {
+                this.codeFiles.forEach(file => {
+                    this.renderFileItem(file);
+                });
+            } else {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'empty-message';
+                emptyMessage.textContent = 'Нет файлов';
+                this.themeList.appendChild(emptyMessage);
+            }
+        }
+        
+        // Обработчики для кнопок секций
         document.querySelectorAll('.section-toggle-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -408,10 +571,9 @@ class NotesApp {
             });
         });
         
-        // Добавляем обработчик для заголовков секций
         document.querySelectorAll('.theme-section-header').forEach(header => {
             header.addEventListener('click', (e) => {
-                if (e.target.closest('.section-toggle-btn')) return;
+                if (e.target.closest('.section-toggle-btn') || e.target.closest('.section-add-btn')) return;
                 const btn = header.querySelector('.section-toggle-btn');
                 if (btn) {
                     const section = btn.dataset.section;
@@ -419,6 +581,46 @@ class NotesApp {
                 }
             });
         });
+        
+        // Обработчик для кнопки добавления файла
+        const addFileBtn = document.getElementById('addFileBtn');
+        if (addFileBtn) {
+            addFileBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openAddFileModal();
+            });
+        }
+    }
+    
+    renderFileItem(file) {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'theme-item';
+        if (file.id === this.currentFileId) {
+            fileItem.classList.add('active');
+        }
+        
+        const fileName = document.createElement('span');
+        fileName.textContent = file.name;
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-theme';
+        deleteBtn.textContent = '×';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.deleteFile(file.id);
+        };
+        
+        fileItem.appendChild(fileName);
+        fileItem.appendChild(deleteBtn);
+        
+        fileItem.onclick = () => {
+            this.openFile(file.id);
+            if (window.innerWidth <= 768) {
+                this.closeSidebar();
+            }
+        };
+        
+        this.themeList.appendChild(fileItem);
     }
     
     toggleSection(section) {
@@ -426,6 +628,8 @@ class NotesApp {
             this.sectionsState.system = !this.sectionsState.system;
         } else if (section === 'user') {
             this.sectionsState.user = !this.sectionsState.user;
+        } else if (section === 'editor') {
+            this.sectionsState.editor = !this.sectionsState.editor;
         }
         this.renderThemes();
     }
@@ -474,6 +678,16 @@ class NotesApp {
         this.addThemeModal.classList.remove('active');
     }
     
+    openAddFileModal() {
+        this.addFileModal.classList.add('active');
+        this.newFileName.value = '';
+        this.newFileName.focus();
+    }
+    
+    closeAddFileModal() {
+        this.addFileModal.classList.remove('active');
+    }
+    
     toggleTheme() {
         this.isDarkTheme = this.themeToggle.checked;
         this.applyTheme();
@@ -497,6 +711,28 @@ class NotesApp {
         this.renderThemes();
         this.openTheme(newTheme.id);
         this.closeAddThemeModal();
+    }
+    
+    addNewFile() {
+        const fileName = this.newFileName.value.trim();
+        if (!fileName) {
+            alert('Пожалуйста, введите название файла');
+            return;
+        }
+        
+        const newFile = {
+            id: Date.now().toString(),
+            name: fileName,
+            html: '',
+            css: '',
+            js: ''
+        };
+        
+        this.codeFiles.push(newFile);
+        this.saveCodeFiles();
+        this.renderThemes();
+        this.openFile(newFile.id);
+        this.closeAddFileModal();
     }
     
     deleteTheme(themeId) {
@@ -525,13 +761,39 @@ class NotesApp {
         this.renderThemes();
     }
     
+    deleteFile(fileId) {
+        if (!confirm('Удалить этот файл?')) {
+            return;
+        }
+        
+        this.codeFiles = this.codeFiles.filter(f => f.id !== fileId);
+        this.saveCodeFiles();
+        
+        if (this.currentFileId === fileId) {
+            this.currentFileId = null;
+            this.codeEditor.style.display = 'none';
+            this.noteEditor.style.display = 'block';
+            this.currentThemeTitle.textContent = 'Выберите тему';
+            this.saveNoteBtn.disabled = true;
+        }
+        
+        this.renderThemes();
+    }
+    
     openTheme(themeId) {
         const systemTheme = SystemNotes.getThemeById(themeId);
+        
+        // Закрываем редактор кода
+        this.codeEditor.style.display = 'none';
+        this.noteEditor.style.display = 'block';
+        this.settingsPanel.style.display = 'none';
+        this.isSettingsOpen = false;
         
         if (systemTheme) {
             this.saveCurrentNote();
             
             this.currentThemeId = themeId;
+            this.currentFileId = null;
             this.currentThemeTitle.textContent = systemTheme.name;
             this.noteEditor.value = systemTheme.content || '';
             this.noteEditor.disabled = true;
@@ -540,10 +802,6 @@ class NotesApp {
             
             localStorage.setItem('notesAppLastTheme', themeId);
             this.renderThemes();
-            
-            if (this.isSettingsOpen) {
-                this.toggleSettings();
-            }
             return;
         }
         
@@ -553,6 +811,7 @@ class NotesApp {
         this.saveCurrentNote();
         
         this.currentThemeId = themeId;
+        this.currentFileId = null;
         this.currentThemeTitle.textContent = theme.name;
         this.noteEditor.value = theme.content || '';
         this.noteEditor.disabled = false;
@@ -562,10 +821,31 @@ class NotesApp {
         
         localStorage.setItem('notesAppLastTheme', themeId);
         this.renderThemes();
+    }
+    
+    openFile(fileId) {
+        const file = this.codeFiles.find(f => f.id === fileId);
+        if (!file) return;
         
-        if (this.isSettingsOpen) {
-            this.toggleSettings();
-        }
+        this.saveCurrentNote();
+        
+        this.currentFileId = fileId;
+        this.currentThemeId = null;
+        this.currentThemeTitle.textContent = file.name;
+        
+        // Показываем редактор кода
+        this.noteEditor.style.display = 'none';
+        this.settingsPanel.style.display = 'none';
+        this.codeEditor.style.display = 'flex';
+        this.isSettingsOpen = false;
+        
+        this.htmlEditor.value = file.html || '';
+        this.cssEditor.value = file.css || '';
+        this.jsEditor.value = file.js || '';
+        
+        this.saveNoteBtn.disabled = true;
+        
+        this.renderThemes();
     }
     
     saveCurrentNote() {
@@ -579,6 +859,19 @@ class NotesApp {
         if (theme) {
             theme.content = this.noteEditor.value;
             this.saveThemes();
+            this.showSaveIndicator();
+        }
+    }
+    
+    saveCurrentFile() {
+        if (!this.currentFileId) return;
+        
+        const file = this.codeFiles.find(f => f.id === this.currentFileId);
+        if (file) {
+            file.html = this.htmlEditor.value;
+            file.css = this.cssEditor.value;
+            file.js = this.jsEditor.value;
+            this.saveCodeFiles();
             this.showSaveIndicator();
         }
     }
