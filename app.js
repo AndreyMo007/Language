@@ -1,932 +1,990 @@
-class NotesApp {
-    constructor() {
-        this.themes = [];
-        this.codeFiles = [];
-        this.currentThemeId = null;
-        this.currentFileId = null;
-        this.autoSaveTimer = null;
-        this.deferredPrompt = null;
-        this.systemThemes = SystemNotes.getAllThemes();
-        this.isDarkTheme = true;
-        this.isOnline = navigator.onLine;
-        this.connectionQuality = 'good';
-        this.isSidebarOpen = false;
-        this.isSidebarCollapsed = false;
-        this.isSettingsOpen = false;
-        this.sectionsState = {
-            system: false,
-            user: false,
-            editor: false
-        };
-        
-        this.initElements();
-        this.loadThemePreference();
-        this.checkInstallMode();
-        this.loadThemes();
-        this.loadCodeFiles();
-        this.attachEventListeners();
-        this.initServiceWorker();
-        this.initConnectionMonitoring();
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Экран установки */
+.install-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    padding: 20px;
+}
+
+.install-container {
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    background: #2d2d2d;
+    padding: 40px 30px;
+    border-radius: 20px;
+    border: 1px solid #3d3d3d;
+}
+
+.install-container h1 {
+    color: #fff;
+    font-size: 2rem;
+    margin-bottom: 15px;
+}
+
+.install-container p {
+    color: #888;
+    margin-bottom: 30px;
+    line-height: 1.5;
+}
+
+.install-btn {
+    width: 100%;
+    padding: 15px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: bold;
+    transition: all 0.3s;
+    margin-bottom: 30px;
+}
+
+.install-btn:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+.install-info {
+    text-align: left;
+    background: #1a1a1a;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.install-info p {
+    margin-bottom: 10px;
+    color: #e0e0e0;
+}
+
+.install-info p:last-child {
+    margin-bottom: 0;
+}
+
+/* Основное приложение */
+.app {
+    display: flex;
+    height: 100vh;
+    position: relative;
+}
+
+/* Затемнение для мобильного меню */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* Боковое меню */
+.sidebar {
+    width: 300px;
+    background: #2d2d2d;
+    border-right: 1px solid #3d3d3d;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 100;
+    overflow: hidden;
+}
+
+.sidebar.collapsed {
+    width: 0;
+    border-right: none;
+}
+
+.sidebar.collapsed .sidebar-header,
+.sidebar.collapsed .theme-list {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #3d3d3d;
+}
+
+.sidebar-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.sidebar-header h2 {
+    font-size: 1.2rem;
+    color: #fff;
+    margin: 0;
+}
+
+.collapse-btn, .expand-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.collapse-btn:hover, .expand-btn:hover {
+    transform: scale(1.2);
+}
+
+.arrow-icon {
+    width: 30px;
+    height: 30px;
+    transition: transform 0.3s ease;
+}
+
+.collapse-arrow {
+    transform: rotate(90deg);
+}
+
+.expand-arrow {
+    transform: rotate(-90deg);
+}
+
+.add-theme-btn {
+    width: 100%;
+    padding: 12px;
+    background: #4a4a4a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+
+.add-theme-btn:hover {
+    background: #5a5a5a;
+}
+
+.theme-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.theme-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.theme-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.theme-list::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 3px;
+}
+
+.theme-list::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+.theme-section-header {
+    padding: 10px 15px;
+    color: #888;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 10px;
+    border-bottom: 1px solid #3d3d3d;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+}
+
+.section-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-toggle-btn, .section-add-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.section-toggle-btn:hover, .section-add-btn:hover {
+    transform: scale(1.2);
+}
+
+.section-add-btn {
+    font-size: 1.2rem;
+    color: #e0e0e0;
+    padding: 0 5px;
+}
+
+.section-arrow {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.3s ease;
+    opacity: 0.7;
+}
+
+.section-arrow.down {
+    transform: rotate(0deg);
+}
+
+.section-arrow.up {
+    transform: rotate(180deg);
+}
+
+.theme-item {
+    padding: 12px 15px;
+    margin-bottom: 5px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.theme-item:hover {
+    background: #3d3d3d;
+}
+
+.theme-item.active {
+    background: #4a4a4a;
+    color: #fff;
+}
+
+.theme-item .delete-theme {
+    display: none;
+    background: none;
+    border: none;
+    color: #ff6b6b;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0 5px;
+}
+
+.theme-item:hover .delete-theme {
+    display: inline;
+}
+
+.empty-message {
+    padding: 20px;
+    text-align: center;
+    color: #888;
+}
+
+/* Основная область */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.main-header {
+    padding: 15px 20px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.main-header h1 {
+    flex: 1;
+    font-size: 1.3rem;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.connection-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.connection-indicator.online {
+    background: #4CAF50;
+}
+
+.connection-indicator.medium {
+    background: #FF9800;
+}
+
+.connection-indicator.poor {
+    background: #FF5722;
+}
+
+.connection-indicator.offline {
+    background: #f44336;
+}
+
+.save-btn {
+    padding: 10px 20px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.save-btn:hover {
+    background: #45a049;
+}
+
+.save-btn:disabled {
+    background: #4a4a4a;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.settings-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.settings-icon-btn:hover {
+    transform: scale(1.1);
+}
+
+.menu-icon-line {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background-color: #e0e0e0;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+.settings-icon-btn:hover .menu-icon-line {
+    background-color: #ffffff;
+}
+
+.editor-area {
+    flex: 1;
+    padding: 20px;
+    position: relative;
+}
+
+#noteEditor {
+    width: 100%;
+    height: 100%;
+    background: #2d2d2d;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    padding: 20px;
+    color: #e0e0e0;
+    font-size: 1rem;
+    line-height: 1.6;
+    resize: none;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+#noteEditor:focus {
+    border-color: #3d3d3d;
+}
+
+#noteEditor:disabled {
+    opacity: 0.8;
+    cursor: not-allowed;
+    background: #2a2a2a;
+}
+
+#noteEditor[readonly] {
+    opacity: 0.8;
+    cursor: default;
+    background: #2a2a2a;
+    border-color: #3d3d3d;
+}
+
+/* Редактор кода */
+.code-editor {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.code-textarea {
+    width: 100%;
+    flex: 1;
+    min-height: 300px;
+    background: #1a1a1a;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    padding: 15px;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    resize: none;
+    outline: none;
+}
+
+.code-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.run-btn {
+    padding: 10px 20px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+
+.run-btn:hover {
+    background: #45a049;
+}
+
+.toggle-output-btn {
+    padding: 10px 15px;
+    background: #4a4a4a;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: background 0.2s;
+}
+
+.toggle-output-btn:hover {
+    background: #5a5a5a;
+}
+
+.code-output-mini {
+    flex: 1;
+    min-height: 150px;
+    max-height: 250px;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#codeIframeMini {
+    width: 100%;
+    height: 100%;
+    background: white;
+    border: none;
+}
+
+/* Полноэкранный вывод */
+.fullscreen-output {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #1a1a1a;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+}
+
+.fullscreen-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+}
+
+.fullscreen-header h3 {
+    color: #fff;
+    font-size: 1.2rem;
+}
+
+.close-fullscreen-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px 10px;
+    transition: transform 0.2s;
+}
+
+.close-fullscreen-btn:hover {
+    transform: scale(1.2);
+}
+
+#codeIframeFull {
+    flex: 1;
+    background: white;
+    border: none;
+}
+
+.console-output-full {
+    max-height: 200px;
+    overflow-y: auto;
+    background: #1a1a1a;
+    border-top: 1px solid #3d3d3d;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #e0e0e0;
+}
+
+.console-log {
+    margin-bottom: 5px;
+}
+
+.console-error {
+    color: #ff6b6b;
+}
+
+/* Панель настроек */
+.settings-panel {
+    width: 100%;
+    height: 100%;
+    background: #2d2d2d;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.settings-header {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #3d3d3d;
+}
+
+.settings-header h3 {
+    color: #fff;
+    font-size: 1.3rem;
+}
+
+.settings-content {
+    max-width: 400px;
+}
+
+.settings-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background: #1a1a1a;
+    border-radius: 8px;
+}
+
+.settings-option label {
+    color: #e0e0e0;
+    font-size: 1rem;
+}
+
+.settings-option input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+}
+
+/* Индикатор оффлайн режима */
+.offline-indicator {
+    background: #f44336;
+    color: white;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
     }
-    
-    initElements() {
-        this.installScreen = document.getElementById('installScreen');
-        this.app = document.getElementById('app');
-        this.installBtn = document.getElementById('installBtn');
-        this.sidebar = document.getElementById('sidebar');
-        this.sidebarOverlay = document.getElementById('sidebarOverlay');
-        this.themeList = document.getElementById('themeList');
-        this.noteEditor = document.getElementById('noteEditor');
-        this.currentThemeTitle = document.getElementById('currentThemeTitle');
-        this.addThemeBtn = document.getElementById('addThemeBtn');
-        this.saveNoteBtn = document.getElementById('saveNoteBtn');
-        this.settingsBtn = document.getElementById('settingsBtn');
-        this.collapseBtn = document.getElementById('collapseBtn');
-        this.expandBtn = document.getElementById('expandBtn');
-        this.collapseIcon = document.getElementById('collapseIcon');
-        this.addThemeModal = document.getElementById('addThemeModal');
-        this.addFileModal = document.getElementById('addFileModal');
-        this.settingsPanel = document.getElementById('settingsPanel');
-        this.newThemeName = document.getElementById('newThemeName');
-        this.newFileName = document.getElementById('newFileName');
-        this.cancelAddTheme = document.getElementById('cancelAddTheme');
-        this.confirmAddTheme = document.getElementById('confirmAddTheme');
-        this.cancelAddFile = document.getElementById('cancelAddFile');
-        this.confirmAddFile = document.getElementById('confirmAddFile');
-        this.themeToggle = document.getElementById('themeToggle');
-        this.offlineIndicator = document.getElementById('offlineIndicator');
-        this.closeOfflineBtn = document.getElementById('closeOfflineBtn');
-        this.connectionIndicator = document.getElementById('connectionIndicator');
-        this.codeEditor = document.getElementById('codeEditor');
-        this.codeTextarea = document.getElementById('codeTextarea');
-        this.codeIframe = document.getElementById('codeIframe');
-        this.consoleOutput = document.getElementById('consoleOutput');
-        this.runCodeBtn = document.getElementById('runCodeBtn');
-    }
-    
-    loadThemePreference() {
-        const savedTheme = localStorage.getItem('notesAppTheme');
-        if (savedTheme) {
-            this.isDarkTheme = savedTheme === 'dark';
-        }
-        this.applyTheme();
-    }
-    
-    applyTheme() {
-        if (this.isDarkTheme) {
-            document.body.classList.remove('light-theme');
-            this.themeToggle.checked = true;
-        } else {
-            document.body.classList.add('light-theme');
-            this.themeToggle.checked = false;
-        }
-        localStorage.setItem('notesAppTheme', this.isDarkTheme ? 'dark' : 'light');
-    }
-    
-    checkInstallMode() {
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
-                          || window.navigator.standalone 
-                          || document.referrer.includes('android-app://');
-        
-        if (isStandalone) {
-            this.showApp();
-        } else {
-            this.showInstallScreen();
-        }
-        
-        window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
-            if (e.matches) {
-                this.showApp();
-            }
-        });
-    }
-    
-    showInstallScreen() {
-        this.installScreen.style.display = 'flex';
-        this.app.style.display = 'none';
-    }
-    
-    showApp() {
-        this.installScreen.style.display = 'none';
-        this.app.style.display = 'flex';
-        
-        const lastThemeId = localStorage.getItem('notesAppLastTheme');
-        if (lastThemeId) {
-            if (SystemNotes.isSystemTheme(lastThemeId)) {
-                this.openTheme(lastThemeId);
-            } else if (this.themes.find(t => t.id === lastThemeId)) {
-                this.openTheme(lastThemeId);
-            }
-        }
-    }
-    
-    attachEventListeners() {
-        this.installBtn.addEventListener('click', () => this.installPwa());
-        
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            this.deferredPrompt = e;
-            this.installBtn.style.display = 'block';
-        });
-        
-        window.addEventListener('appinstalled', () => {
-            console.log('PWA установлено');
-            this.deferredPrompt = null;
-            this.showApp();
-        });
-        
-        this.addThemeBtn.addEventListener('click', () => this.openAddThemeModal());
-        this.cancelAddTheme.addEventListener('click', () => this.closeAddThemeModal());
-        this.confirmAddTheme.addEventListener('click', () => this.addNewTheme());
-        this.saveNoteBtn.addEventListener('click', () => this.saveCurrentNote());
-        this.settingsBtn.addEventListener('click', () => this.toggleSettings());
-        this.themeToggle.addEventListener('change', () => this.toggleTheme());
-        this.closeOfflineBtn.addEventListener('click', () => this.hideOfflineIndicator());
-        this.sidebarOverlay.addEventListener('click', () => this.closeSidebar());
-        this.collapseBtn.addEventListener('click', () => this.collapseSidebar());
-        this.expandBtn.addEventListener('click', () => this.expandSidebar());
-        
-        // Редактор кода
-        this.cancelAddFile.addEventListener('click', () => this.closeAddFileModal());
-        this.confirmAddFile.addEventListener('click', () => this.addNewFile());
-        this.runCodeBtn.addEventListener('click', () => this.runCode());
-        
-        this.addThemeModal.addEventListener('click', (e) => {
-            if (e.target === this.addThemeModal) {
-                this.closeAddThemeModal();
-            }
-        });
-        
-        this.addFileModal.addEventListener('click', (e) => {
-            if (e.target === this.addFileModal) {
-                this.closeAddFileModal();
-            }
-        });
-        
-        this.noteEditor.addEventListener('input', () => {
-            this.startAutoSave();
-        });
-        
-        this.codeTextarea.addEventListener('input', () => {
-            this.saveCurrentFile();
-        });
-        
-        this.newThemeName.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.addNewTheme();
-            }
-        });
-        
-        this.newFileName.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.addNewFile();
-            }
-        });
-        
-        window.addEventListener('beforeunload', () => {
-            this.saveCurrentNote();
-            this.saveCurrentFile();
-        });
-        
-        // Обработка свайпов для мобильных
-        let touchStartX = 0;
-        let touchEndX = 0;
-        
-        document.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-        });
-        
-        document.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            this.handleSwipe(touchStartX, touchEndX);
-        });
-    }
-    
-    getFileExtension(filename) {
-        const parts = filename.split('.');
-        if (parts.length > 1) {
-            return parts[parts.length - 1].toLowerCase();
-        }
-        return '';
-    }
-    
-    runCode() {
-        const code = this.codeTextarea.value;
-        const fileName = this.currentFileId ? 
-            this.codeFiles.find(f => f.id === this.currentFileId)?.name || 'index.html' : 
-            'index.html';
-        const extension = this.getFileExtension(fileName);
-        
-        // Очищаем консоль
-        this.consoleOutput.innerHTML = '';
-        
-        // Перехватываем console.log
-        const originalLog = console.log;
-        const originalError = console.error;
-        const originalWarn = console.warn;
-        
-        console.log = (...args) => {
-            this.addConsoleMessage(args.join(' '), 'log');
-            originalLog.apply(console, args);
-        };
-        
-        console.error = (...args) => {
-            this.addConsoleMessage(args.join(' '), 'error');
-            originalError.apply(console, args);
-        };
-        
-        console.warn = (...args) => {
-            this.addConsoleMessage(args.join(' '), 'warn');
-            originalWarn.apply(console, args);
-        };
-        
-        try {
-            if (extension === 'html' || extension === 'htm') {
-                // Для HTML файлов - просто загружаем весь код
-                this.codeIframe.srcdoc = code;
-            } else if (extension === 'css') {
-                // Для CSS - создаем HTML обертку
-                const fullHtml = `<!DOCTYPE html>
-<html>
-<head>
-<style>${code}</style>
-</head>
-<body>
-<div id="preview">CSS предпросмотр</div>
-</body>
-</html>`;
-                this.codeIframe.srcdoc = fullHtml;
-            } else if (extension === 'js') {
-                // Для JS - выполняем код
-                const result = new Function(code)();
-                if (result !== undefined) {
-                    this.addConsoleMessage(String(result), 'log');
-                }
-                // Создаем простой HTML для отображения
-                const fullHtml = `<!DOCTYPE html>
-<html>
-<body>
-<div>JavaScript выполнен. Смотрите консоль.</div>
-</body>
-</html>`;
-                this.codeIframe.srcdoc = fullHtml;
-            } else {
-                // По умолчанию - просто показываем как HTML
-                this.codeIframe.srcdoc = code;
-            }
-        } catch (error) {
-            this.addConsoleMessage(error.message, 'error');
-        }
-        
-        // Восстанавливаем console
-        console.log = originalLog;
-        console.error = originalError;
-        console.warn = originalWarn;
-    }
-    
-    addConsoleMessage(message, type) {
-        const msgElement = document.createElement('div');
-        msgElement.className = `console-${type}`;
-        msgElement.textContent = message;
-        this.consoleOutput.appendChild(msgElement);
-        this.consoleOutput.scrollTop = this.consoleOutput.scrollHeight;
-    }
-    
-    toggleSettings() {
-        this.isSettingsOpen = !this.isSettingsOpen;
-        
-        if (this.isSettingsOpen) {
-            this.noteEditor.style.display = 'none';
-            this.codeEditor.style.display = 'none';
-            this.settingsPanel.style.display = 'block';
-        } else {
-            this.noteEditor.style.display = 'block';
-            this.settingsPanel.style.display = 'none';
-            if (this.currentFileId) {
-                this.codeEditor.style.display = 'flex';
-            }
-        }
-    }
-    
-    collapseSidebar() {
-        this.isSidebarCollapsed = true;
-        this.sidebar.classList.add('collapsed');
-        this.collapseBtn.style.display = 'none';
-        this.expandBtn.style.display = 'flex';
-        
-        if (window.innerWidth <= 768) {
-            this.closeSidebar();
-        }
-    }
-    
-    expandSidebar() {
-        this.isSidebarCollapsed = false;
-        this.sidebar.classList.remove('collapsed');
-        this.collapseBtn.style.display = 'flex';
-        this.expandBtn.style.display = 'none';
-    }
-    
-    handleSwipe(startX, endX) {
-        const swipeDistance = endX - startX;
-        const threshold = 100;
-        
-        if (Math.abs(swipeDistance) > threshold) {
-            if (swipeDistance > 0 && startX < 50) {
-                this.openSidebar();
-            } else if (swipeDistance < 0 && this.isSidebarOpen) {
-                this.closeSidebar();
-            }
-        }
-    }
-    
-    initConnectionMonitoring() {
-        window.addEventListener('online', () => {
-            this.isOnline = true;
-            this.checkConnectionQuality();
-        });
-        
-        window.addEventListener('offline', () => {
-            this.isOnline = false;
-            this.connectionQuality = 'offline';
-            this.updateConnectionIndicator();
-            this.showOfflineIndicator();
-        });
-        
-        setInterval(() => {
-            if (this.isOnline) {
-                this.checkConnectionQuality();
-            }
-        }, 30000);
-        
-        this.updateConnectionIndicator();
-    }
-    
-    checkConnectionQuality() {
-        if (!this.isOnline) {
-            this.connectionQuality = 'offline';
-            this.updateConnectionIndicator();
-            this.showOfflineIndicator();
-            return;
-        }
-        
-        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-        
-        if (connection) {
-            if (connection.effectiveType === '4g') {
-                this.connectionQuality = 'good';
-            } else if (connection.effectiveType === '3g' || connection.effectiveType === '2g') {
-                this.connectionQuality = 'medium';
-            } else if (connection.effectiveType === 'slow-2g') {
-                this.connectionQuality = 'poor';
-            } else {
-                this.connectionQuality = 'good';
-            }
-        } else {
-            this.testConnectionSpeed();
-            return;
-        }
-        
-        this.updateConnectionIndicator();
-        this.updateOfflineIndicatorVisibility();
-    }
-    
-    testConnectionSpeed() {
-        const startTime = Date.now();
-        fetch('https://www.google.com/favicon.ico', { 
-            mode: 'no-cors',
-            cache: 'no-store' 
-        })
-        .then(() => {
-            const endTime = Date.now();
-            const duration = endTime - startTime;
-            
-            if (duration < 300) {
-                this.connectionQuality = 'good';
-            } else if (duration < 1000) {
-                this.connectionQuality = 'medium';
-            } else {
-                this.connectionQuality = 'poor';
-            }
-            
-            this.updateConnectionIndicator();
-            this.updateOfflineIndicatorVisibility();
-        })
-        .catch(() => {
-            this.connectionQuality = 'offline';
-            this.isOnline = false;
-            this.updateConnectionIndicator();
-            this.showOfflineIndicator();
-        });
-    }
-    
-    updateConnectionIndicator() {
-        this.connectionIndicator.className = 'connection-indicator';
-        
-        switch (this.connectionQuality) {
-            case 'good':
-                this.connectionIndicator.classList.add('online');
-                this.connectionIndicator.title = 'Онлайн - отличное соединение';
-                break;
-            case 'medium':
-                this.connectionIndicator.classList.add('medium');
-                this.connectionIndicator.title = 'Среднее качество соединения';
-                break;
-            case 'poor':
-                this.connectionIndicator.classList.add('poor');
-                this.connectionIndicator.title = 'Плохое качество соединения';
-                break;
-            case 'offline':
-                this.connectionIndicator.classList.add('offline');
-                this.connectionIndicator.title = 'Оффлайн - нет соединения';
-                break;
-        }
-    }
-    
-    updateOfflineIndicatorVisibility() {
-        if (this.connectionQuality === 'offline') {
-            this.showOfflineIndicator();
-        } else {
-            this.hideOfflineIndicator();
-        }
-    }
-    
-    showOfflineIndicator() {
-        this.offlineIndicator.style.display = 'flex';
-    }
-    
-    hideOfflineIndicator() {
-        this.offlineIndicator.style.display = 'none';
-    }
-    
-    async installPwa() {
-        if (this.deferredPrompt) {
-            this.deferredPrompt.prompt();
-            const result = await this.deferredPrompt.userChoice;
-            console.log('Результат установки:', result.outcome);
-            this.deferredPrompt = null;
-        } else {
-            alert('Нажмите кнопку "Поделиться" и выберите "На экран «Домой»"');
-        }
-    }
-    
-    loadThemes() {
-        const savedThemes = localStorage.getItem('notesAppThemes');
-        if (savedThemes) {
-            this.themes = JSON.parse(savedThemes);
-        }
-        this.renderThemes();
-    }
-    
-    saveThemes() {
-        localStorage.setItem('notesAppThemes', JSON.stringify(this.themes));
-    }
-    
-    loadCodeFiles() {
-        const savedFiles = localStorage.getItem('notesAppCodeFiles');
-        if (savedFiles) {
-            this.codeFiles = JSON.parse(savedFiles);
-        }
-    }
-    
-    saveCodeFiles() {
-        localStorage.setItem('notesAppCodeFiles', JSON.stringify(this.codeFiles));
-    }
-    
-    renderThemes() {
-        this.themeList.innerHTML = '';
-        
-        // Системные темы (Конспекты)
-        if (this.systemThemes.length > 0) {
-            const systemHeader = document.createElement('div');
-            systemHeader.className = 'theme-section-header';
-            systemHeader.innerHTML = `
-                <span>Конспекты</span>
-                <div class="section-header-right">
-                    <button class="section-toggle-btn" data-section="system">
-                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="section-arrow ${this.sectionsState.system ? 'up' : 'down'}">
-                    </button>
-                </div>
-            `;
-            this.themeList.appendChild(systemHeader);
-            
-            if (this.sectionsState.system) {
-                this.systemThemes.forEach(theme => {
-                    this.renderThemeItem(theme, true);
-                });
-            }
-        }
-        
-        // Пользовательские темы (Заметки)
-        const userHeader = document.createElement('div');
-        userHeader.className = 'theme-section-header';
-        userHeader.innerHTML = `
-            <span>Заметки</span>
-            <div class="section-header-right">
-                <button class="section-toggle-btn" data-section="user">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="section-arrow ${this.sectionsState.user ? 'up' : 'down'}">
-                </button>
-            </div>
-        `;
-        this.themeList.appendChild(userHeader);
-        
-        if (this.sectionsState.user) {
-            if (this.themes.length > 0) {
-                this.themes.forEach(theme => {
-                    this.renderThemeItem(theme, false);
-                });
-            } else {
-                const emptyMessage = document.createElement('div');
-                emptyMessage.className = 'empty-message';
-                emptyMessage.textContent = 'Создайте первую заметку';
-                this.themeList.appendChild(emptyMessage);
-            }
-        }
-        
-        // Секция Редактор
-        const editorHeader = document.createElement('div');
-        editorHeader.className = 'theme-section-header';
-        editorHeader.innerHTML = `
-            <span>Редактор</span>
-            <div class="section-header-right">
-                <button class="section-add-btn" id="addFileBtn" title="Добавить файл">+</button>
-                <button class="section-toggle-btn" data-section="editor">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 960'%3E%3Cpath fill='%23e0e0e0' d='M480 345 240 585l43 43 197-198 197 198 43-43z'/%3E%3C/svg%3E" alt="toggle" class="section-arrow ${this.sectionsState.editor ? 'up' : 'down'}">
-                </button>
-            </div>
-        `;
-        this.themeList.appendChild(editorHeader);
-        
-        if (this.sectionsState.editor) {
-            if (this.codeFiles.length > 0) {
-                this.codeFiles.forEach(file => {
-                    this.renderFileItem(file);
-                });
-            } else {
-                const emptyMessage = document.createElement('div');
-                emptyMessage.className = 'empty-message';
-                emptyMessage.textContent = 'Нет файлов';
-                this.themeList.appendChild(emptyMessage);
-            }
-        }
-        
-        // Обработчики для кнопок секций
-        document.querySelectorAll('.section-toggle-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const section = btn.dataset.section;
-                this.toggleSection(section);
-            });
-        });
-        
-        document.querySelectorAll('.theme-section-header').forEach(header => {
-            header.addEventListener('click', (e) => {
-                if (e.target.closest('.section-toggle-btn') || e.target.closest('.section-add-btn')) return;
-                const btn = header.querySelector('.section-toggle-btn');
-                if (btn) {
-                    const section = btn.dataset.section;
-                    this.toggleSection(section);
-                }
-            });
-        });
-        
-        // Обработчик для кнопки добавления файла
-        const addFileBtn = document.getElementById('addFileBtn');
-        if (addFileBtn) {
-            addFileBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.openAddFileModal();
-            });
-        }
-    }
-    
-    renderFileItem(file) {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'theme-item';
-        if (file.id === this.currentFileId) {
-            fileItem.classList.add('active');
-        }
-        
-        const fileName = document.createElement('span');
-        fileName.textContent = file.name;
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'delete-theme';
-        deleteBtn.textContent = '×';
-        deleteBtn.onclick = (e) => {
-            e.stopPropagation();
-            this.deleteFile(file.id);
-        };
-        
-        fileItem.appendChild(fileName);
-        fileItem.appendChild(deleteBtn);
-        
-        fileItem.onclick = () => {
-            this.openFile(file.id);
-            if (window.innerWidth <= 768) {
-                this.closeSidebar();
-            }
-        };
-        
-        this.themeList.appendChild(fileItem);
-    }
-    
-    toggleSection(section) {
-        if (section === 'system') {
-            this.sectionsState.system = !this.sectionsState.system;
-        } else if (section === 'user') {
-            this.sectionsState.user = !this.sectionsState.user;
-        } else if (section === 'editor') {
-            this.sectionsState.editor = !this.sectionsState.editor;
-        }
-        this.renderThemes();
-    }
-    
-    renderThemeItem(theme, isSystem) {
-        const themeItem = document.createElement('div');
-        themeItem.className = 'theme-item';
-        if (theme.id === this.currentThemeId) {
-            themeItem.classList.add('active');
-        }
-        
-        const themeName = document.createElement('span');
-        themeName.textContent = theme.name;
-        
-        if (!isSystem) {
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'delete-theme';
-            deleteBtn.textContent = '×';
-            deleteBtn.onclick = (e) => {
-                e.stopPropagation();
-                this.deleteTheme(theme.id);
-            };
-            themeItem.appendChild(themeName);
-            themeItem.appendChild(deleteBtn);
-        } else {
-            themeItem.appendChild(themeName);
-        }
-        
-        themeItem.onclick = () => {
-            this.openTheme(theme.id);
-            if (window.innerWidth <= 768) {
-                this.closeSidebar();
-            }
-        };
-        
-        this.themeList.appendChild(themeItem);
-    }
-    
-    openAddThemeModal() {
-        this.addThemeModal.classList.add('active');
-        this.newThemeName.value = '';
-        this.newThemeName.focus();
-    }
-    
-    closeAddThemeModal() {
-        this.addThemeModal.classList.remove('active');
-    }
-    
-    openAddFileModal() {
-        this.addFileModal.classList.add('active');
-        this.newFileName.value = '';
-        this.newFileName.focus();
-    }
-    
-    closeAddFileModal() {
-        this.addFileModal.classList.remove('active');
-    }
-    
-    toggleTheme() {
-        this.isDarkTheme = this.themeToggle.checked;
-        this.applyTheme();
-    }
-    
-    addNewTheme() {
-        const themeName = this.newThemeName.value.trim();
-        if (!themeName) {
-            alert('Пожалуйста, введите название заметки');
-            return;
-        }
-        
-        const newTheme = {
-            id: Date.now().toString(),
-            name: themeName,
-            content: ''
-        };
-        
-        this.themes.push(newTheme);
-        this.saveThemes();
-        this.renderThemes();
-        this.openTheme(newTheme.id);
-        this.closeAddThemeModal();
-    }
-    
-    addNewFile() {
-        const fileName = this.newFileName.value.trim();
-        if (!fileName) {
-            alert('Пожалуйста, введите название файла');
-            return;
-        }
-        
-        const newFile = {
-            id: Date.now().toString(),
-            name: fileName,
-            content: ''
-        };
-        
-        this.codeFiles.push(newFile);
-        this.saveCodeFiles();
-        this.renderThemes();
-        this.openFile(newFile.id);
-        this.closeAddFileModal();
-    }
-    
-    deleteTheme(themeId) {
-        if (SystemNotes.isSystemTheme(themeId)) {
-            alert('Системные конспекты нельзя удалить');
-            return;
-        }
-        
-        if (!confirm('Удалить эту заметку?')) {
-            return;
-        }
-        
-        this.themes = this.themes.filter(t => t.id !== themeId);
-        this.saveThemes();
-        
-        if (this.currentThemeId === themeId) {
-            this.currentThemeId = null;
-            this.noteEditor.value = '';
-            this.noteEditor.disabled = true;
-            this.noteEditor.readOnly = false;
-            this.currentThemeTitle.textContent = 'Выберите тему';
-            this.saveNoteBtn.disabled = true;
-            localStorage.removeItem('notesAppLastTheme');
-        }
-        
-        this.renderThemes();
-    }
-    
-    deleteFile(fileId) {
-        if (!confirm('Удалить этот файл?')) {
-            return;
-        }
-        
-        this.codeFiles = this.codeFiles.filter(f => f.id !== fileId);
-        this.saveCodeFiles();
-        
-        if (this.currentFileId === fileId) {
-            this.currentFileId = null;
-            this.codeEditor.style.display = 'none';
-            this.noteEditor.style.display = 'block';
-            this.currentThemeTitle.textContent = 'Выберите тему';
-            this.saveNoteBtn.disabled = true;
-        }
-        
-        this.renderThemes();
-    }
-    
-    openTheme(themeId) {
-        const systemTheme = SystemNotes.getThemeById(themeId);
-        
-        // Закрываем редактор кода
-        this.codeEditor.style.display = 'none';
-        this.noteEditor.style.display = 'block';
-        this.settingsPanel.style.display = 'none';
-        this.isSettingsOpen = false;
-        
-        if (systemTheme) {
-            this.saveCurrentNote();
-            
-            this.currentThemeId = themeId;
-            this.currentFileId = null;
-            this.currentThemeTitle.textContent = systemTheme.name;
-            this.noteEditor.value = systemTheme.content || '';
-            this.noteEditor.disabled = true;
-            this.noteEditor.readOnly = true;
-            this.saveNoteBtn.disabled = true;
-            
-            localStorage.setItem('notesAppLastTheme', themeId);
-            this.renderThemes();
-            return;
-        }
-        
-        const theme = this.themes.find(t => t.id === themeId);
-        if (!theme) return;
-        
-        this.saveCurrentNote();
-        
-        this.currentThemeId = themeId;
-        this.currentFileId = null;
-        this.currentThemeTitle.textContent = theme.name;
-        this.noteEditor.value = theme.content || '';
-        this.noteEditor.disabled = false;
-        this.noteEditor.readOnly = false;
-        this.saveNoteBtn.disabled = false;
-        this.noteEditor.focus();
-        
-        localStorage.setItem('notesAppLastTheme', themeId);
-        this.renderThemes();
-    }
-    
-    openFile(fileId) {
-        const file = this.codeFiles.find(f => f.id === fileId);
-        if (!file) return;
-        
-        this.saveCurrentNote();
-        
-        this.currentFileId = fileId;
-        this.currentThemeId = null;
-        this.currentThemeTitle.textContent = file.name;
-        
-        // Показываем редактор кода
-        this.noteEditor.style.display = 'none';
-        this.settingsPanel.style.display = 'none';
-        this.codeEditor.style.display = 'flex';
-        this.isSettingsOpen = false;
-        
-        this.codeTextarea.value = file.content || '';
-        
-        this.saveNoteBtn.disabled = true;
-        
-        this.renderThemes();
-    }
-    
-    saveCurrentNote() {
-        if (!this.currentThemeId) return;
-        
-        if (SystemNotes.isSystemTheme(this.currentThemeId)) {
-            return;
-        }
-        
-        const theme = this.themes.find(t => t.id === this.currentThemeId);
-        if (theme) {
-            theme.content = this.noteEditor.value;
-            this.saveThemes();
-            this.showSaveIndicator();
-        }
-    }
-    
-    saveCurrentFile() {
-        if (!this.currentFileId) return;
-        
-        const file = this.codeFiles.find(f => f.id === this.currentFileId);
-        if (file) {
-            file.content = this.codeTextarea.value;
-            this.saveCodeFiles();
-            this.showSaveIndicator();
-        }
-    }
-    
-    startAutoSave() {
-        clearTimeout(this.autoSaveTimer);
-        this.autoSaveTimer = setTimeout(() => {
-            this.saveCurrentNote();
-        }, 1000);
-    }
-    
-    showSaveIndicator() {
-        this.saveNoteBtn.textContent = 'Сохранено';
-        setTimeout(() => {
-            this.saveNoteBtn.textContent = 'Сохранить';
-        }, 2000);
-    }
-    
-    toggleSidebar() {
-        if (this.isSidebarOpen) {
-            this.closeSidebar();
-        } else {
-            this.openSidebar();
-        }
-    }
-    
-    openSidebar() {
-        this.sidebar.classList.add('open');
-        this.sidebarOverlay.classList.add('active');
-        this.isSidebarOpen = true;
-    }
-    
-    closeSidebar() {
-        this.sidebar.classList.remove('open');
-        this.sidebarOverlay.classList.remove('active');
-        this.isSidebarOpen = false;
-    }
-    
-    initServiceWorker() {
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker зарегистрирован:', registration);
-                    })
-                    .catch(error => {
-                        console.log('Ошибка регистрации Service Worker:', error);
-                    });
-            });
-        }
+    to {
+        transform: translateY(0);
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const app = new NotesApp();
-    window.app = app;
-});
+.close-offline {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 5px;
+    transition: transform 0.2s;
+}
+
+.close-offline:hover {
+    transform: scale(1.2);
+}
+
+/* Модальное окно */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: #2d2d2d;
+    padding: 25px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+}
+
+.modal-content h3 {
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 12px;
+    background: #1a1a1a;
+    border: 1px solid #3d3d3d;
+    border-radius: 6px;
+    color: #e0e0e0;
+    margin-bottom: 20px;
+    font-size: 1rem;
+}
+
+.modal-content input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.modal-buttons button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+#cancelAddTheme, #cancelAddFile {
+    background: #4a4a4a;
+    color: #e0e0e0;
+}
+
+#cancelAddTheme:hover, #cancelAddFile:hover {
+    background: #5a5a5a;
+}
+
+#confirmAddTheme, #confirmAddFile {
+    background: #4CAF50;
+    color: white;
+}
+
+#confirmAddTheme:hover, #confirmAddFile:hover {
+    background: #45a049;
+}
+
+/* Адаптивный дизайн для мобильных */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        transform: translateX(-100%);
+        width: 280px;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    .sidebar.open {
+        transform: translateX(0);
+    }
+    
+    .sidebar.collapsed {
+        transform: translateX(-100%);
+        width: 280px;
+    }
+    
+    .main-header {
+        padding: 10px 15px;
+    }
+    
+    .main-header h1 {
+        font-size: 1rem;
+    }
+    
+    .connection-indicator {
+        width: 10px;
+        height: 10px;
+    }
+    
+    .save-btn {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+    }
+    
+    .editor-area {
+        padding: 10px;
+    }
+    
+    #noteEditor {
+        padding: 15px;
+        font-size: 0.95rem;
+    }
+    
+    .arrow-icon {
+        width: 25px;
+        height: 25px;
+    }
+    
+    .code-textarea {
+        min-height: 200px;
+    }
+}
+
+/* Светлая тема */
+body.light-theme {
+    background: #f5f5f5;
+    color: #333;
+}
+
+body.light-theme .install-screen {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+}
+
+body.light-theme .install-container {
+    background: #ffffff;
+    border: 1px solid #ddd;
+}
+
+body.light-theme .sidebar {
+    background: #ffffff;
+    border-right: 1px solid #ddd;
+}
+
+body.light-theme .main-header {
+    background: #ffffff;
+    border-bottom: 1px solid #ddd;
+}
+
+body.light-theme .main-header h1 {
+    color: #333;
+}
+
+body.light-theme .theme-item {
+    color: #333;
+}
+
+body.light-theme .theme-item:hover {
+    background: #f0f0f0;
+}
+
+body.light-theme .theme-item.active {
+    background: #e0e0e0;
+    color: #000;
+}
+
+body.light-theme #noteEditor {
+    background: #ffffff;
+    border: 1px solid #ddd;
+    color: #333;
+}
+
+body.light-theme #noteEditor:focus {
+    border-color: #ddd;
+}
+
+body.light-theme #noteEditor:disabled,
+body.light-theme #noteEditor[readonly] {
+    background: #f5f5f5;
+}
+
+body.light-theme .settings-panel {
+    background: #ffffff;
+    border: 1px solid #ddd;
+}
+
+body.light-theme .settings-header h3 {
+    color: #333;
+}
+
+body.light-theme .settings-option {
+    background: #f5f5f5;
+}
+
+body.light-theme .settings-option label {
+    color: #333;
+}
+
+body.light-theme .modal-content {
+    background: #ffffff;
+}
+
+body.light-theme .modal-content h3 {
+    color: #333;
+}
+
+body.light-theme .modal-content input {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    color: #333;
+}
+
+body.light-theme .add-theme-btn {
+    background: #e0e0e0;
+    color: #333;
+}
+
+body.light-theme .add-theme-btn:hover {
+    background: #d0d0d0;
+}
+
+body.light-theme .theme-section-header {
+    color: #666;
+    border-bottom: 1px solid #ddd;
+}
+
+body.light-theme .sidebar-header h2 {
+    color: #333;
+}
+
+body.light-theme .theme-list::-webkit-scrollbar-thumb {
+    background: #bbb;
+}
+
+body.light-theme .theme-list::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+body.light-theme .menu-icon-line {
+    background-color: #333;
+}
+
+body.light-theme .settings-icon-btn:hover .menu-icon-line {
+    background-color: #000;
+}
+
+body.light-theme .arrow-icon {
+    filter: brightness(0.3);
+}
+
+body.light-theme .section-arrow {
+    filter: brightness(0.5);
+}
+
+body.light-theme .section-add-btn {
+    color: #333;
+}
+
+body.light-theme .code-textarea {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    color: #333;
+}
+
+body.light-theme .toggle-output-btn {
+    background: #e0e0e0;
+    color: #333;
+}
+
+body.light-theme .toggle-output-btn:hover {
+    background: #d0d0d0;
+}
+
+body.light-theme .fullscreen-output {
+    background: #f5f5f5;
+}
+
+body.light-theme .fullscreen-header {
+    background: #ffffff;
+    border-bottom: 1px solid #ddd;
+}
+
+body.light-theme .fullscreen-header h3 {
+    color: #333;
+}
+
+body.light-theme .close-fullscreen-btn {
+    color: #333;
+}
+
+body.light-theme .console-output-full {
+    background: #f5f5f5;
+    border-top: 1px solid #ddd;
+    color: #333;
+}
