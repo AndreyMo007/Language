@@ -427,6 +427,7 @@ body {
     flex: 3;
     min-height: 150px;
     display: flex;
+    overflow: hidden;
 }
 
 .code-editor-wrapper {
@@ -440,12 +441,13 @@ body {
     overflow: hidden;
 }
 
+/* ИСПРАВЛЕНО: Нумерация строк с автоматической шириной */
 .line-numbers {
-    width: 40px;
-    min-width: 40px;
+    min-width: 50px;
+    max-width: 100px;
+    padding: 15px 10px;
     background: #1a1a1a;
     color: #555;
-    padding: 15px 8px;
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
     line-height: 1.5;
@@ -454,6 +456,7 @@ body {
     overflow: hidden;
     border-right: 1px solid #2a2a2a;
     white-space: pre;
+    flex-shrink: 0;
 }
 
 .code-textarea {
@@ -475,12 +478,6 @@ body {
 
 .code-textarea::placeholder {
     color: #555;
-}
-
-/* Подсветка синтаксиса через textarea (имитация) */
-.code-textarea {
-    color: #d4d4d4;
-    caret-color: #fff;
 }
 
 /* Скроллбар для кода */
@@ -619,6 +616,7 @@ body {
     font-family: 'Courier New', monospace;
     font-size: 0.85rem;
     color: #e0e0e0;
+    max-height: 100%;
 }
 
 .console-output.collapsed { display: none; }
@@ -808,7 +806,7 @@ body {
     .editor-area { padding: 10px; }
     #noteEditor { padding: 15px; }
     .arrow-icon { width: 25px; height: 25px; }
-    .line-numbers { width: 30px; min-width: 30px; padding: 15px 5px; font-size: 0.8rem; }
+    .line-numbers { min-width: 40px; padding: 15px 5px; font-size: 0.8rem; }
 }
 
 /* Светлая тема */
