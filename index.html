@@ -68,7 +68,10 @@
                 <!-- Редактор кода -->
                 <div class="code-editor" id="codeEditor" style="display: none;">
                     <div class="code-editor-top" id="codeEditorTop">
-                        <textarea class="code-textarea" id="codeTextarea" placeholder="Введите ваш код здесь..."></textarea>
+                        <div class="code-editor-wrapper">
+                            <div class="line-numbers" id="lineNumbers">1</div>
+                            <textarea class="code-textarea" id="codeTextarea" placeholder="Введите ваш код здесь..." wrap="off" spellcheck="false"></textarea>
+                        </div>
                     </div>
                     
                     <div class="resizer-horizontal" id="resizerHorizontal"></div>
