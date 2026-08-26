@@ -13,6 +13,7 @@ class NotesApp {
         this.isSidebarOpen = false;
         this.isSidebarCollapsed = false;
         this.isSettingsOpen = false;
+        this.isConsoleOpen = true;
         this.sectionsState = {
             system: false,
             user: false,
@@ -25,6 +26,7 @@ class NotesApp {
         this.loadThemes();
         this.loadCodeFiles();
         this.attachEventListeners();
+        this.initResizer();
         this.initServiceWorker();
         this.initConnectionMonitoring();
     }
@@ -43,7 +45,6 @@ class NotesApp {
         this.settingsBtn = document.getElementById('settingsBtn');
         this.collapseBtn = document.getElementById('collapseBtn');
         this.expandBtn = document.getElementById('expandBtn');
-        this.collapseIcon = document.getElementById('collapseIcon');
         this.addThemeModal = document.getElementById('addThemeModal');
         this.addFileModal = document.getElementById('addFileModal');
         this.settingsPanel = document.getElementById('settingsPanel');
@@ -57,16 +58,75 @@ class NotesApp {
         this.offlineIndicator = document.getElementById('offlineIndicator');
         this.closeOfflineBtn = document.getElementById('closeOfflineBtn');
         this.connectionIndicator = document.getElementById('connectionIndicator');
+        
+        // Редактор кода
         this.codeEditor = document.getElementById('codeEditor');
         this.codeTextarea = document.getElementById('codeTextarea');
-        this.codeIframeMini = document.getElementById('codeIframeMini');
-        this.codeIframeFull = document.getElementById('codeIframeFull');
-        this.consoleOutputFull = document.getElementById('consoleOutputFull');
+        this.codeEditorTop = document.getElementById('codeEditorTop');
+        this.codeEditorBottom = document.getElementById('codeEditorBottom');
+        this.resizerHorizontal = document.getElementById('resizerHorizontal');
         this.runCodeBtn = document.getElementById('runCodeBtn');
-        this.toggleOutputBtn = document.getElementById('toggleOutputBtn');
-        this.codeOutputMini = document.getElementById('codeOutputMini');
-        this.fullscreenOutput = document.getElementById('fullscreenOutput');
+        this.openWindowBtn = document.getElementById('openWindowBtn');
+        this.consoleToggleBtn = document.getElementById('consoleToggleBtn');
+        this.consoleArrow = document.getElementById('consoleArrow');
+        this.consoleOutput = document.getElementById('consoleOutput');
+        this.fullscreenOverlay = document.getElementById('fullscreenOverlay');
+        this.codeIframeFull = document.getElementById('codeIframeFull');
         this.closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
+    }
+    
+    initResizer() {
+        let isResizing = false;
+        
+        this.resizerHorizontal.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'row-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const rect = this.codeEditor.getBoundingClientRect();
+            const offsetY = e.clientY - rect.top;
+            const topHeight = Math.max(100, offsetY);
+            const bottomHeight = Math.max(100, rect.height - offsetY - 6);
+            
+            this.codeEditorTop.style.flex = `0 0 ${topHeight}px`;
+            this.codeEditorBottom.style.flex = `1 1 ${bottomHeight}px`;
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        });
+        
+        // Touch
+        this.resizerHorizontal.addEventListener('touchstart', (e) => {
+            isResizing = true;
+            e.preventDefault();
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (!isResizing) return;
+            
+            const touch = e.touches[0];
+            const rect = this.codeEditor.getBoundingClientRect();
+            const offsetY = touch.clientY - rect.top;
+            const topHeight = Math.max(100, offsetY);
+            const bottomHeight = Math.max(100, rect.height - offsetY - 6);
+            
+            this.codeEditorTop.style.flex = `0 0 ${topHeight}px`;
+            this.codeEditorBottom.style.flex = `1 1 ${bottomHeight}px`;
+        });
+        
+        document.addEventListener('touchend', () => {
+            isResizing = false;
+        });
     }
     
     loadThemePreference() {
@@ -135,7 +195,6 @@ class NotesApp {
         });
         
         window.addEventListener('appinstalled', () => {
-            console.log('PWA установлено');
             this.deferredPrompt = null;
             this.showApp();
         });
@@ -155,39 +214,27 @@ class NotesApp {
         this.cancelAddFile.addEventListener('click', () => this.closeAddFileModal());
         this.confirmAddFile.addEventListener('click', () => this.addNewFile());
         this.runCodeBtn.addEventListener('click', () => this.runCode());
-        this.toggleOutputBtn.addEventListener('click', () => this.toggleFullscreenOutput());
+        this.openWindowBtn.addEventListener('click', () => this.openFullscreenResult());
+        this.consoleToggleBtn.addEventListener('click', () => this.toggleConsole());
         this.closeFullscreenBtn.addEventListener('click', () => this.closeFullscreenOutput());
         
         this.addThemeModal.addEventListener('click', (e) => {
-            if (e.target === this.addThemeModal) {
-                this.closeAddThemeModal();
-            }
+            if (e.target === this.addThemeModal) this.closeAddThemeModal();
         });
         
         this.addFileModal.addEventListener('click', (e) => {
-            if (e.target === this.addFileModal) {
-                this.closeAddFileModal();
-            }
+            if (e.target === this.addFileModal) this.closeAddFileModal();
         });
         
-        this.noteEditor.addEventListener('input', () => {
-            this.startAutoSave();
-        });
-        
-        this.codeTextarea.addEventListener('input', () => {
-            this.saveCurrentFile();
-        });
+        this.noteEditor.addEventListener('input', () => this.startAutoSave());
+        this.codeTextarea.addEventListener('input', () => this.saveCurrentFile());
         
         this.newThemeName.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.addNewTheme();
-            }
+            if (e.key === 'Enter') this.addNewTheme();
         });
         
         this.newFileName.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.addNewFile();
-            }
+            if (e.key === 'Enter') this.addNewFile();
         });
         
         window.addEventListener('beforeunload', () => {
@@ -195,7 +242,7 @@ class NotesApp {
             this.saveCurrentFile();
         });
         
-        // Обработка свайпов для мобильных
+        // Свайпы
         let touchStartX = 0;
         let touchEndX = 0;
         
@@ -224,10 +271,8 @@ class NotesApp {
             'index.html';
         const extension = this.getFileExtension(fileName);
         
-        // Очищаем консоль
-        this.consoleOutputFull.innerHTML = '';
+        this.consoleOutput.innerHTML = '';
         
-        // Перехватываем console.log
         const originalLog = console.log;
         const originalError = console.error;
         const originalWarn = console.warn;
@@ -248,8 +293,39 @@ class NotesApp {
         };
         
         try {
+            if (extension === 'js') {
+                const result = new Function(code)();
+                if (result !== undefined) {
+                    this.addConsoleMessage(String(result), 'log');
+                }
+                this.addConsoleMessage('JavaScript выполнен успешно', 'log');
+            } else if (extension === 'html' || extension === 'htm') {
+                this.addConsoleMessage('HTML код готов к просмотру. Нажмите кнопку открытия окна.', 'log');
+            } else if (extension === 'css') {
+                this.addConsoleMessage('CSS код готов к просмотру. Нажмите кнопку открытия окна.', 'log');
+            } else {
+                this.addConsoleMessage('Код выполнен', 'log');
+            }
+        } catch (error) {
+            this.addConsoleMessage(error.message, 'error');
+        }
+        
+        console.log = originalLog;
+        console.error = originalError;
+        console.warn = originalWarn;
+    }
+    
+    openFullscreenResult() {
+        const code = this.codeTextarea.value;
+        const fileName = this.currentFileId ? 
+            this.codeFiles.find(f => f.id === this.currentFileId)?.name || 'index.html' : 
+            'index.html';
+        const extension = this.getFileExtension(fileName);
+        
+        this.consoleOutput.innerHTML = '';
+        
+        try {
             if (extension === 'html' || extension === 'htm') {
-                this.codeIframeMini.srcdoc = code;
                 this.codeIframeFull.srcdoc = code;
             } else if (extension === 'css') {
                 const fullHtml = `<!DOCTYPE html>
@@ -258,57 +334,61 @@ class NotesApp {
 <style>${code}</style>
 </head>
 <body>
-<div id="preview">CSS предпросмотр</div>
+<div style="padding: 20px; font-family: sans-serif;">CSS предпросмотр</div>
 </body>
 </html>`;
-                this.codeIframeMini.srcdoc = fullHtml;
                 this.codeIframeFull.srcdoc = fullHtml;
             } else if (extension === 'js') {
+                const originalLog = console.log;
+                console.log = (...args) => {
+                    this.addConsoleMessage(args.join(' '), 'log');
+                };
+                
                 const result = new Function(code)();
-                if (result !== undefined) {
-                    this.addConsoleMessage(String(result), 'log');
-                }
+                
+                console.log = originalLog;
+                
                 const fullHtml = `<!DOCTYPE html>
 <html>
 <body>
-<div>JavaScript выполнен. Смотрите консоль.</div>
+<div style="padding: 20px; font-family: sans-serif;">JavaScript выполнен. Результат: ${result !== undefined ? result : 'см. консоль'}</div>
 </body>
 </html>`;
-                this.codeIframeMini.srcdoc = fullHtml;
                 this.codeIframeFull.srcdoc = fullHtml;
             } else {
-                this.codeIframeMini.srcdoc = code;
-                this.codeIframeFull.srcdoc = code;
+                this.codeIframeFull.srcdoc = `<pre style="padding: 20px; font-family: monospace;">${code}</pre>`;
             }
             
-            // Показываем мини-вывод
-            this.codeOutputMini.style.display = 'block';
+            this.fullscreenOverlay.style.display = 'flex';
         } catch (error) {
             this.addConsoleMessage(error.message, 'error');
         }
-        
-        // Восстанавливаем console
-        console.log = originalLog;
-        console.error = originalError;
-        console.warn = originalWarn;
     }
     
     addConsoleMessage(message, type) {
         const msgElement = document.createElement('div');
         msgElement.className = `console-${type}`;
         msgElement.textContent = message;
-        this.consoleOutputFull.appendChild(msgElement);
-        this.consoleOutputFull.scrollTop = this.consoleOutputFull.scrollHeight;
+        this.consoleOutput.appendChild(msgElement);
+        this.consoleOutput.scrollTop = this.consoleOutput.scrollHeight;
     }
     
-    toggleFullscreenOutput() {
-        this.fullscreenOutput.style.display = 'flex';
-        this.codeOutputMini.style.display = 'none';
+    toggleConsole() {
+        this.isConsoleOpen = !this.isConsoleOpen;
+        
+        if (this.isConsoleOpen) {
+            this.consoleOutput.classList.remove('collapsed');
+            this.consoleArrow.classList.remove('up');
+            this.consoleArrow.classList.add('down');
+        } else {
+            this.consoleOutput.classList.add('collapsed');
+            this.consoleArrow.classList.remove('down');
+            this.consoleArrow.classList.add('up');
+        }
     }
     
     closeFullscreenOutput() {
-        this.fullscreenOutput.style.display = 'none';
-        this.codeOutputMini.style.display = 'block';
+        this.fullscreenOverlay.style.display = 'none';
     }
     
     toggleSettings() {
@@ -401,41 +481,11 @@ class NotesApp {
                 this.connectionQuality = 'good';
             }
         } else {
-            this.testConnectionSpeed();
-            return;
+            this.connectionQuality = 'good';
         }
         
         this.updateConnectionIndicator();
-        this.updateOfflineIndicatorVisibility();
-    }
-    
-    testConnectionSpeed() {
-        const startTime = Date.now();
-        fetch('https://www.google.com/favicon.ico', { 
-            mode: 'no-cors',
-            cache: 'no-store' 
-        })
-        .then(() => {
-            const endTime = Date.now();
-            const duration = endTime - startTime;
-            
-            if (duration < 300) {
-                this.connectionQuality = 'good';
-            } else if (duration < 1000) {
-                this.connectionQuality = 'medium';
-            } else {
-                this.connectionQuality = 'poor';
-            }
-            
-            this.updateConnectionIndicator();
-            this.updateOfflineIndicatorVisibility();
-        })
-        .catch(() => {
-            this.connectionQuality = 'offline';
-            this.isOnline = false;
-            this.updateConnectionIndicator();
-            this.showOfflineIndicator();
-        });
+        this.hideOfflineIndicator();
     }
     
     updateConnectionIndicator() {
@@ -444,28 +494,16 @@ class NotesApp {
         switch (this.connectionQuality) {
             case 'good':
                 this.connectionIndicator.classList.add('online');
-                this.connectionIndicator.title = 'Онлайн - отличное соединение';
                 break;
             case 'medium':
                 this.connectionIndicator.classList.add('medium');
-                this.connectionIndicator.title = 'Среднее качество соединения';
                 break;
             case 'poor':
                 this.connectionIndicator.classList.add('poor');
-                this.connectionIndicator.title = 'Плохое качество соединения';
                 break;
             case 'offline':
                 this.connectionIndicator.classList.add('offline');
-                this.connectionIndicator.title = 'Оффлайн - нет соединения';
                 break;
-        }
-    }
-    
-    updateOfflineIndicatorVisibility() {
-        if (this.connectionQuality === 'offline') {
-            this.showOfflineIndicator();
-        } else {
-            this.hideOfflineIndicator();
         }
     }
     
@@ -480,8 +518,7 @@ class NotesApp {
     async installPwa() {
         if (this.deferredPrompt) {
             this.deferredPrompt.prompt();
-            const result = await this.deferredPrompt.userChoice;
-            console.log('Результат установки:', result.outcome);
+            await this.deferredPrompt.userChoice;
             this.deferredPrompt = null;
         } else {
             alert('Нажмите кнопку "Поделиться" и выберите "На экран «Домой»"');
@@ -514,7 +551,7 @@ class NotesApp {
     renderThemes() {
         this.themeList.innerHTML = '';
         
-        // Системные темы (Конспекты)
+        // Конспекты
         if (this.systemThemes.length > 0) {
             const systemHeader = document.createElement('div');
             systemHeader.className = 'theme-section-header';
@@ -535,7 +572,7 @@ class NotesApp {
             }
         }
         
-        // Пользовательские темы (Заметки)
+        // Заметки
         const userHeader = document.createElement('div');
         userHeader.className = 'theme-section-header';
         userHeader.innerHTML = `
@@ -561,7 +598,7 @@ class NotesApp {
             }
         }
         
-        // Секция Редактор
+        // Редактор
         const editorHeader = document.createElement('div');
         editorHeader.className = 'theme-section-header';
         editorHeader.innerHTML = `
@@ -588,7 +625,7 @@ class NotesApp {
             }
         }
         
-        // Обработчики для кнопок секций
+        // Обработчики
         document.querySelectorAll('.section-toggle-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -608,7 +645,6 @@ class NotesApp {
             });
         });
         
-        // Обработчик для кнопки добавления файла
         const addFileBtn = document.getElementById('addFileBtn');
         if (addFileBtn) {
             addFileBtn.addEventListener('click', (e) => {
@@ -933,10 +969,10 @@ class NotesApp {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('service-worker.js')
                     .then(registration => {
-                        console.log('Service Worker зарегистрирован:', registration);
+                        console.log('Service Worker зарегистрирован');
                     })
                     .catch(error => {
-                        console.log('Ошибка регистрации Service Worker:', error);
+                        console.log('Ошибка регистрации Service Worker');
                     });
             });
         }
