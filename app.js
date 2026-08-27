@@ -81,7 +81,6 @@ class NotesApp {
     }
     
     async initPyodide() {
-        // Загружаем Pyodide только если есть интернет
         if (!navigator.onLine) {
             console.log('Pyodide не загружен - нет интернета');
             return;
@@ -90,7 +89,6 @@ class NotesApp {
         try {
             this.pyodideLoading = true;
             
-            // Проверяем, загружен ли уже скрипт
             if (!window.loadPyodide) {
                 await new Promise((resolve, reject) => {
                     const script = document.createElement('script');
@@ -378,7 +376,6 @@ class NotesApp {
                 this.addConsoleMessage('JavaScript выполнен успешно', 'log');
             } else if (extension === 'python' || extension === 'py') {
                 if (this.pyodide) {
-                    // Перенаправляем stdout Python в консоль
                     this.pyodide.setStdout({
                         batched: (text) => {
                             this.addConsoleMessage(text, 'log');
@@ -401,15 +398,13 @@ class NotesApp {
                     this.addConsoleMessage('Pyodide загружается, попробуйте через несколько секунд...', 'warn');
                 } else {
                     this.addConsoleMessage('Pyodide не загружен. Проверьте подключение к интернету.', 'error');
-                    this.addConsoleMessage('Попытка загрузки Pyodide...', 'warn');
                     await this.initPyodide();
                     if (this.pyodide) {
                         this.addConsoleMessage('Pyodide загружен! Нажмите "Запустить" снова.', 'log');
                     }
                 }
-            } else if (extension === 'cpp' || extension === 'c++' || extension === 'cc') {
-                this.addConsoleMessage('C++ код. Для выполнения требуется компилятор.', 'warn');
-                this.addConsoleMessage('Код сохранен и готов к просмотру.', 'log');
+            } else if (extension === 'cpp' || extension === 'c++' || extension === 'cc' || extension === 'c') {
+                await this.runCppCode(code);
             } else if (extension === 'html' || extension === 'htm') {
                 this.addConsoleMessage('HTML код готов к просмотру. Нажмите кнопку открытия окна.', 'log');
             } else if (extension === 'css') {
@@ -424,6 +419,73 @@ class NotesApp {
         console.log = originalLog;
         console.error = originalError;
         console.warn = originalWarn;
+    }
+    
+    async runCppCode(code) {
+        this.addConsoleMessage('Компиляция C++ кода...', 'warn');
+        
+        try {
+            const response = await fetch('https://godbolt.org/api/compiler/gsnapshot/compile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    source: code,
+                    options: {
+                        userArguments: '-O0',
+                        executeParameters: {
+                            args: [],
+                            stdin: ''
+                        },
+                        compilerOptions: {
+                            executorRequest: true
+                        },
+                        filters: {
+                            execute: true
+                        }
+                    }
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.execResult) {
+                if (result.execResult.stdout && result.execResult.stdout.length > 0) {
+                    result.execResult.stdout.forEach(line => {
+                        this.addConsoleMessage(line.text, 'log');
+                    });
+                }
+                
+                if (result.execResult.stderr && result.execResult.stderr.length > 0) {
+                    result.execResult.stderr.forEach(line => {
+                        this.addConsoleMessage(line.text, 'error');
+                    });
+                }
+                
+                if (result.execResult.code === 0) {
+                    this.addConsoleMessage('C++ выполнен успешно', 'log');
+                } else {
+                    this.addConsoleMessage(`Ошибка выполнения (код ${result.execResult.code})`, 'error');
+                }
+            }
+            
+            if (result.stderr && result.stderr.length > 0) {
+                result.stderr.forEach(line => {
+                    this.addConsoleMessage(line.text, 'error');
+                });
+            }
+            
+            if (result.stdout && result.stdout.length > 0) {
+                result.stdout.forEach(line => {
+                    this.addConsoleMessage(line.text, 'log');
+                });
+            }
+            
+        } catch (error) {
+            this.addConsoleMessage('Ошибка компиляции: ' + error.message, 'error');
+        }
     }
     
     openFullscreenResult() {
@@ -458,17 +520,8 @@ class NotesApp {
 </body>
 </html>`;
                 this.codeIframeFull.srcdoc = fullHtml;
-            } else if (extension === 'python' || extension === 'py') {
-                const fullHtml = `<!DOCTYPE html>
-<html>
-<body>
-<pre style="padding: 20px; font-family: monospace; background: #f5f5f5; white-space: pre-wrap;">${code}</pre>
-<p style="padding: 10px 20px; font-family: sans-serif; color: #666;">Python код. Запустите через консоль для выполнения.</p>
-</body>
-</html>`;
-                this.codeIframeFull.srcdoc = fullHtml;
             } else {
-                this.codeIframeFull.srcdoc = `<pre style="padding: 20px; font-family: monospace; background: #f5f5f5;">${code}</pre>`;
+                this.codeIframeFull.srcdoc = `<pre style="padding: 20px; font-family: monospace; background: #f5f5f5; white-space: pre-wrap;">${code}</pre>`;
             }
             
             this.fullscreenOverlay.style.display = 'flex';
