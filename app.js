@@ -19,6 +19,8 @@ class NotesApp {
             user: false,
             editor: false
         };
+        this.pyodide = null;
+        this.pyodideLoading = false;
         
         this.initElements();
         this.loadThemePreference();
@@ -28,6 +30,7 @@ class NotesApp {
         this.attachEventListeners();
         this.initResizer();
         this.initCodeEditor();
+        this.initPyodide();
         this.initServiceWorker();
         this.initConnectionMonitoring();
     }
@@ -77,13 +80,44 @@ class NotesApp {
         this.closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
     }
     
+    async initPyodide() {
+        // Загружаем Pyodide только если есть интернет
+        if (!navigator.onLine) {
+            console.log('Pyodide не загружен - нет интернета');
+            return;
+        }
+        
+        try {
+            this.pyodideLoading = true;
+            
+            // Проверяем, загружен ли уже скрипт
+            if (!window.loadPyodide) {
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            }
+            
+            this.pyodide = await window.loadPyodide({
+                indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/'
+            });
+            
+            console.log('Pyodide загружен успешно');
+            this.pyodideLoading = false;
+        } catch (error) {
+            console.error('Ошибка загрузки Pyodide:', error);
+            this.pyodideLoading = false;
+        }
+    }
+    
     initCodeEditor() {
-        // Обновление нумерации строк
         this.codeTextarea.addEventListener('input', () => {
             this.updateLineNumbers();
         });
         
-        // Синхронизация скролла
         this.codeTextarea.addEventListener('scroll', () => {
             this.lineNumbers.scrollTop = this.codeTextarea.scrollTop;
         });
@@ -98,7 +132,6 @@ class NotesApp {
             lineNumbers += i + '\n';
         }
         this.lineNumbers.textContent = lineNumbers;
-        // Ширина фиксированная 60px, не меняем
     }
     
     syncScroll() {
@@ -270,7 +303,6 @@ class NotesApp {
             this.saveCurrentFile();
         });
         
-        // Свайпы
         let touchStartX = 0;
         let touchEndX = 0;
         
@@ -283,7 +315,6 @@ class NotesApp {
             this.handleSwipe(touchStartX, touchEndX);
         });
         
-        // Tab в редакторе
         this.codeTextarea.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') {
                 e.preventDefault();
@@ -296,7 +327,6 @@ class NotesApp {
             }
         });
         
-        // Сохранение при вводе
         this.codeTextarea.addEventListener('input', () => {
             this.saveCurrentFile();
             this.updateLineNumbers();
@@ -311,7 +341,7 @@ class NotesApp {
         return '';
     }
     
-    runCode() {
+    async runCode() {
         const code = this.codeTextarea.value;
         const fileName = this.currentFileId ? 
             this.codeFiles.find(f => f.id === this.currentFileId)?.name || 'index.html' : 
@@ -347,8 +377,36 @@ class NotesApp {
                 }
                 this.addConsoleMessage('JavaScript выполнен успешно', 'log');
             } else if (extension === 'python' || extension === 'py') {
-                this.addConsoleMessage('Python код. Для выполнения требуется интерпретатор Python.', 'warn');
-                this.addConsoleMessage('Код сохранен и готов к просмотру.', 'log');
+                if (this.pyodide) {
+                    // Перенаправляем stdout Python в консоль
+                    this.pyodide.setStdout({
+                        batched: (text) => {
+                            this.addConsoleMessage(text, 'log');
+                        }
+                    });
+                    
+                    this.pyodide.setStderr({
+                        batched: (text) => {
+                            this.addConsoleMessage(text, 'error');
+                        }
+                    });
+                    
+                    try {
+                        await this.pyodide.runPythonAsync(code);
+                        this.addConsoleMessage('Python выполнен успешно', 'log');
+                    } catch (pyError) {
+                        this.addConsoleMessage(pyError.message, 'error');
+                    }
+                } else if (this.pyodideLoading) {
+                    this.addConsoleMessage('Pyodide загружается, попробуйте через несколько секунд...', 'warn');
+                } else {
+                    this.addConsoleMessage('Pyodide не загружен. Проверьте подключение к интернету.', 'error');
+                    this.addConsoleMessage('Попытка загрузки Pyodide...', 'warn');
+                    await this.initPyodide();
+                    if (this.pyodide) {
+                        this.addConsoleMessage('Pyodide загружен! Нажмите "Запустить" снова.', 'log');
+                    }
+                }
             } else if (extension === 'cpp' || extension === 'c++' || extension === 'cc') {
                 this.addConsoleMessage('C++ код. Для выполнения требуется компилятор.', 'warn');
                 this.addConsoleMessage('Код сохранен и готов к просмотру.', 'log');
@@ -392,15 +450,7 @@ class NotesApp {
 </html>`;
                 this.codeIframeFull.srcdoc = fullHtml;
             } else if (extension === 'js' || extension === 'javascript') {
-                const originalLog = console.log;
-                console.log = (...args) => {
-                    this.addConsoleMessage(args.join(' '), 'log');
-                };
-                
                 const result = new Function(code)();
-                
-                console.log = originalLog;
-                
                 const fullHtml = `<!DOCTYPE html>
 <html>
 <body>
@@ -409,21 +459,14 @@ class NotesApp {
 </html>`;
                 this.codeIframeFull.srcdoc = fullHtml;
             } else if (extension === 'python' || extension === 'py') {
-                this.codeIframeFull.srcdoc = `<!DOCTYPE html>
+                const fullHtml = `<!DOCTYPE html>
 <html>
 <body>
-<pre style="padding: 20px; font-family: monospace; background: #f5f5f5;">${code}</pre>
-<p style="padding: 10px 20px; font-family: sans-serif; color: #666;">Python код. Для выполнения требуется интерпретатор Python.</p>
+<pre style="padding: 20px; font-family: monospace; background: #f5f5f5; white-space: pre-wrap;">${code}</pre>
+<p style="padding: 10px 20px; font-family: sans-serif; color: #666;">Python код. Запустите через консоль для выполнения.</p>
 </body>
 </html>`;
-            } else if (extension === 'cpp' || extension === 'c++' || extension === 'cc') {
-                this.codeIframeFull.srcdoc = `<!DOCTYPE html>
-<html>
-<body>
-<pre style="padding: 20px; font-family: monospace; background: #f5f5f5;">${code}</pre>
-<p style="padding: 10px 20px; font-family: sans-serif; color: #666;">C++ код. Для выполнения требуется компилятор.</p>
-</body>
-</html>`;
+                this.codeIframeFull.srcdoc = fullHtml;
             } else {
                 this.codeIframeFull.srcdoc = `<pre style="padding: 20px; font-family: monospace; background: #f5f5f5;">${code}</pre>`;
             }
@@ -620,7 +663,6 @@ class NotesApp {
     renderThemes() {
         this.themeList.innerHTML = '';
         
-        // Конспекты
         if (this.systemThemes.length > 0) {
             const systemHeader = document.createElement('div');
             systemHeader.className = 'theme-section-header';
@@ -641,7 +683,6 @@ class NotesApp {
             }
         }
         
-        // Заметки
         const userHeader = document.createElement('div');
         userHeader.className = 'theme-section-header';
         userHeader.innerHTML = `
@@ -667,7 +708,6 @@ class NotesApp {
             }
         }
         
-        // Редактор
         const editorHeader = document.createElement('div');
         editorHeader.className = 'theme-section-header';
         const addBtnHtml = this.sectionsState.editor ? 
@@ -696,7 +736,6 @@ class NotesApp {
             }
         }
         
-        // Обработчики
         document.querySelectorAll('.section-toggle-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
